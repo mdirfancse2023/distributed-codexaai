@@ -1,0 +1,2 @@
+com.microservice.codexa.ai.common_library.security.SharedSecurityAutoConfiguration
+com.microservice.codexa.ai.common_library.error.SharedExceptionAutoConfiguration

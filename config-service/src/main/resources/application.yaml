@@ -1,3 +1,15 @@
 spring:
   application:
     name: config-service
+
+  cloud:
+    config.server.git:
+      uri: https://github.com/mdirfancse2023/codexa-config-server
+      username: mdirfancse2023
+      password: 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
+      default-label: main
+
+server:
+  port: 8888
+
+

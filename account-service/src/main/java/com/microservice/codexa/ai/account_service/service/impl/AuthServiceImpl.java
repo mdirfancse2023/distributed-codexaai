@@ -27,6 +27,8 @@ public class AuthServiceImpl implements AuthService {
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
     AuthUtil authUtil;
+
+
     AuthenticationManager authehticationManager;
 
     //Moddelmapper vs mapstruct . Mapstruct is compile time mapping and faster than modelmapper which is runtime mapping.

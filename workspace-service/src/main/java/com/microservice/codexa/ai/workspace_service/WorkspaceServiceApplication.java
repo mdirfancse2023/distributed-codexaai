@@ -2,8 +2,10 @@ package com.microservice.codexa.ai.workspace_service;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
+@EnableFeignClients
 public class WorkspaceServiceApplication {
 
 	public static void main(String[] args) {
