@@ -1,6 +1,7 @@
 package com.microservice.codexa.ai.workspace_service.service.impl;
 
 import com.microservice.codexa.ai.common_library.dto.PlanDto;
+import com.microservice.codexa.ai.common_library.enums.ProjectPermission;
 import com.microservice.codexa.ai.common_library.enums.ProjectRole;
 import com.microservice.codexa.ai.common_library.error.BadRequestException;
 import com.microservice.codexa.ai.common_library.error.ResourceNotFoundException;
@@ -15,6 +16,7 @@ import com.microservice.codexa.ai.workspace_service.entity.ProjectMemberId;
 import com.microservice.codexa.ai.workspace_service.mapper.ProjectMapper;
 import com.microservice.codexa.ai.workspace_service.repository.ProjectMemberRepository;
 import com.microservice.codexa.ai.workspace_service.repository.ProjectRepository;
+import com.microservice.codexa.ai.workspace_service.security.SecurityExpressions;
 import com.microservice.codexa.ai.workspace_service.service.ProjectService;
 import com.microservice.codexa.ai.workspace_service.service.ProjectTemplateService;
 import jakarta.transaction.Transactional;
@@ -39,6 +41,7 @@ public class ProjectServiceImpl implements ProjectService {
     AuthUtil authUtil;
     ProjectTemplateService projectTemplateService;
     AccountClient accountClient;
+    SecurityExpressions securityExpressions;
 
     @Override
     public List<ProjectSummaryResponse> getUserProjects() {
@@ -108,6 +111,11 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.save(project);
     }
 
+    @Override
+    public boolean hasPermission(Long projectId, ProjectPermission permission) {
+        return securityExpressions.hasPermission(projectId, permission);
+    }
+
     // Internal functions
     public Project getAccessibleProjectById(Long projectId, Long userId) {
         return projectRepository.findAccessibleProjectById(projectId, userId).orElseThrow(() -> new ResourceNotFoundException("Project", projectId.toString()));
@@ -120,6 +128,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
         PlanDto plan = accountClient.getCurrentSubscribedPlanByUser();
         int maxAllowed = plan.maxProjects();
+        //int maxAllowed = 10;
         int ownedCount = projectMemberRepository.countProjectOwnedByUser(userId);
         return ownedCount < maxAllowed;
     }

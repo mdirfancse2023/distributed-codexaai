@@ -6,7 +6,6 @@ import com.microservice.codexa.ai.account_service.dto.auth.LoginRequest;
 import com.microservice.codexa.ai.account_service.dto.auth.SignupRequest;
 import com.microservice.codexa.ai.account_service.dto.auth.UserProfileResponse;
 import com.microservice.codexa.ai.account_service.service.AuthService;
-import com.microservice.codexa.ai.account_service.service.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class AuthController {
     AuthService authService;
-    UserService userService;
 
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequest request){

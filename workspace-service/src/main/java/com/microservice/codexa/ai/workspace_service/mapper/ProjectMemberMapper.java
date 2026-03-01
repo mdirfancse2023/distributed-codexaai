@@ -8,13 +8,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface ProjectMemberMapper {
 
-    @Mapping(target="userId",source="id")
-    @Mapping(target="role", constant="OWNER")
-    MemberResponse toProjectMemberResponseFromOwner(User owner);
-
-    @Mapping(source = "user.id", target = "userId")
-    @Mapping(source = "user.username", target = "username")
-    @Mapping(source = "user.name", target = "name")
-    @Mapping(source = "projectRole", target = "role")
+    @Mapping(source = "id.userId", target = "userId")
     MemberResponse toProjectMemberResponseFromMember(ProjectMember projectMember);
 }

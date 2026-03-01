@@ -1,10 +1,10 @@
 package com.microservice.codexa.ai.workspace_service.service.impl;
 
 
+import com.microservice.codexa.ai.common_library.dto.FileNode;
+import com.microservice.codexa.ai.common_library.dto.FileTreeDto;
 import com.microservice.codexa.ai.common_library.error.ResourceNotFoundException;
 import com.microservice.codexa.ai.workspace_service.dto.project.FileContentResponse;
-import com.microservice.codexa.ai.workspace_service.dto.project.FileNode;
-import com.microservice.codexa.ai.workspace_service.dto.project.FileTreeResponse;
 import com.microservice.codexa.ai.workspace_service.entity.Project;
 import com.microservice.codexa.ai.workspace_service.entity.ProjectFile;
 import com.microservice.codexa.ai.workspace_service.mapper.ProjectFileMapper;
@@ -40,14 +40,14 @@ public class ProjectFileServiceImpl implements ProjectFileService {
     private String BUCKET_NAME;
 
     @Override
-    public FileTreeResponse getFileTree(Long projectId) {
+    public FileTreeDto getFileTree(Long projectId) {
         List<ProjectFile> projectFileList = projectFileRepository.findByProjectId(projectId);
         List<FileNode> projectFileNodes =  projectFileMapper.toListOfFileNode(projectFileList);
-        return new FileTreeResponse(projectFileNodes);
+        return new FileTreeDto(projectFileNodes);
     }
 
     @Override
-    public FileContentResponse getFileContent(Long projectId, String path) {
+    public String getFileContent(Long projectId, String path) {
         String objectName = projectId + "/" + path;
         try{
             InputStream is = minioClient.getObject(
@@ -56,8 +56,7 @@ public class ProjectFileServiceImpl implements ProjectFileService {
                             .object(objectName)
                             .build()
             );
-            String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            return new FileContentResponse(path, content);
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         } catch(Exception e){
             throw new RuntimeException("Failed to read file contents", e);
         }

@@ -1,4 +1,4 @@
-package com.microservice.codexa.ai.workspace_service.dto.project;
+package com.microservice.codexa.ai.common_library.dto;
 
 public record FileNode(String path) {
     @Override

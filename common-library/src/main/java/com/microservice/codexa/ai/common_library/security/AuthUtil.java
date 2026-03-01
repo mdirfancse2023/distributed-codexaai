@@ -24,10 +24,11 @@ public class AuthUtil {
         return Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAccessToken(UserDto user){
+    public String generateAccessToken(JwtUserPrinciple user){
         return Jwts.builder()
                 .subject(user.username())
-                .claim("userId", user.id().toString())
+                .claim("userId", user.userId().toString())
+                .claim("name", user.name())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + 1000*60*10*12)) // 2 hrs expiration
                 .signWith(getSecretKey())
@@ -43,8 +44,9 @@ public class AuthUtil {
 
         // Extract user details from claims after converting userId to string and then to Long
         Long userId = Long.parseLong(claims.get("userId", String.class));
+        String name = claims.get("name", String.class);
         String username = claims.getSubject();
-        return new JwtUserPrinciple(userId, username, null, new ArrayList<>());
+        return new JwtUserPrinciple(userId, name, username, null, new ArrayList<>());
     }
 
     public Long getCurrentUserId() {

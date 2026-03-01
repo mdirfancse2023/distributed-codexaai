@@ -1,6 +1,7 @@
 package com.microservice.codexa.ai.workspace_service.service;
 
 
+import com.microservice.codexa.ai.common_library.enums.ProjectPermission;
 import com.microservice.codexa.ai.workspace_service.dto.project.ProjectRequest;
 import com.microservice.codexa.ai.workspace_service.dto.project.ProjectResponse;
 import com.microservice.codexa.ai.workspace_service.dto.project.ProjectSummaryResponse;
@@ -17,4 +18,6 @@ public interface ProjectService {
     ProjectResponse updateProject(Long id, ProjectRequest request);
 
     void softDelete(Long id);
+
+    boolean hasPermission(Long projectId, ProjectPermission permission);
 }
