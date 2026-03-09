@@ -4,7 +4,6 @@ package com.microservice.codexa.ai.workspace_service.service.impl;
 import com.microservice.codexa.ai.common_library.dto.FileNode;
 import com.microservice.codexa.ai.common_library.dto.FileTreeDto;
 import com.microservice.codexa.ai.common_library.error.ResourceNotFoundException;
-import com.microservice.codexa.ai.workspace_service.dto.project.FileContentResponse;
 import com.microservice.codexa.ai.workspace_service.entity.Project;
 import com.microservice.codexa.ai.workspace_service.entity.ProjectFile;
 import com.microservice.codexa.ai.workspace_service.mapper.ProjectFileMapper;
@@ -14,6 +13,7 @@ import com.microservice.codexa.ai.workspace_service.service.ProjectFileService;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,6 +63,7 @@ public class ProjectFileServiceImpl implements ProjectFileService {
     }
 
     @Override
+    @Transactional
     public void saveFile(Long projectId, String path, String content) {
         Project project = projectRepository.findById(projectId).orElseThrow(
                 () -> new ResourceNotFoundException("Project", projectId.toString())

@@ -1,6 +1,7 @@
 package com.microservice.codexa.ai.workspace_service.security;
 
 import com.microservice.codexa.ai.common_library.security.JwtAuthFilter;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +35,8 @@ public class WorkspaceSecurityConfig {
                 .sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authConfig -> authConfig
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll() // Allow async dispatches means that requests initiated asynchronously are permitted without authentication
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll() // Allow error dispatches means that requests resulting from error handling are permitted without authentication
                         .anyRequest().authenticated()
                 ).addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exceptionHandlingConfigurer ->

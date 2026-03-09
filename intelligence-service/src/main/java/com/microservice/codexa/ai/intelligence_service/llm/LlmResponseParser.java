@@ -1,5 +1,6 @@
 package com.microservice.codexa.ai.intelligence_service.llm;
 
+import com.microservice.codexa.ai.common_library.enums.ChatEventStatus;
 import com.microservice.codexa.ai.common_library.enums.ChatEventType;
 import com.microservice.codexa.ai.intelligence_service.entity.ChatEvent;
 import com.microservice.codexa.ai.intelligence_service.entity.ChatMessage;
@@ -47,6 +48,7 @@ public class LlmResponseParser {
             //Extract attributes map
             Map<String, String> attrMap = extractAttributes(attributes);
             ChatEvent.ChatEventBuilder builder = ChatEvent.builder()
+                    .status(ChatEventStatus.CONFIRMED) // Default status
                     .chatMessage(parentMessage)
                     .content(content) // This is markdown
                     .sequenceOrder(orderCounter++);
@@ -56,6 +58,7 @@ public class LlmResponseParser {
                 case "message" -> builder.type(ChatEventType.MESSAGE);
                 case "file" -> {
                     builder.type(ChatEventType.FILE_EDIT);
+                    builder.status(ChatEventStatus.PENDING);
                     builder.filePath(attrMap.get("path")); // Required for file edits
                 }
                 case "tool" -> {

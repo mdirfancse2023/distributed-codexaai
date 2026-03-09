@@ -1,5 +1,6 @@
 package com.microservice.codexa.ai.intelligence_service.entity;
 
+import com.microservice.codexa.ai.common_library.enums.ChatEventStatus;
 import com.microservice.codexa.ai.common_library.enums.ChatEventType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,5 +37,11 @@ public class ChatEvent {
 
     @Column(columnDefinition = "text")
     String metadata;
+
+    String sagaId;
+
+    @Enumerated(EnumType.STRING)
+    //@Column(nullable = false)
+    ChatEventStatus status;
 
 }
