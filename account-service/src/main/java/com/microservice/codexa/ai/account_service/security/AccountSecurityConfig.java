@@ -35,7 +35,7 @@ public class AccountSecurityConfig {
                 .sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authConfig -> authConfig
-                        .requestMatchers("/auth/**","/webhooks/**").permitAll()
+                        .requestMatchers("/auth/**","/webhooks/**","/actuator/**","/internal/**").permitAll()
                         .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll() // Allow async dispatches means that requests initiated asynchronously are permitted without authentication
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll() // Allow error dispatches means that requests resulting from error handling are permitted without authentication
                         .anyRequest().authenticated()

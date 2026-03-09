@@ -9,6 +9,7 @@ import io.fabric8.kubernetes.client.dsl.ExecListener;
 import io.fabric8.kubernetes.client.dsl.ExecWatch;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -24,91 +25,102 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     private final KubernetesClient client;
     private final StringRedisTemplate redisTemplate;
 
-    private static final String NAMESPACE = "codexa-ai";
+    @Value("${app.preview.namespace}")
+    private String namespace;
+
+    @Value("${app.preview.domain}")
+    private String baseDomain;
+
+    @Value("${app.preview.proxy-port}")
+    private String proxyPort;
+
     private static final String POOL_LABEL = "status";
     private static final String PROJECT_LABEL = "project-id";
     private static final String IDLE = "idle";
     private static final String BUSY = "busy";
-    private static final String SYNCER_CONTAINER = "syncer";
-    private static final String RUNNER_CONTAINER = "runner";
-    private static final String REVERSE_PROXY_PORT = "8090";
 
-    @Override
     public DeployResponse deploy(Long projectId) {
-        String domain = "project-" + projectId + ".app.domain.com";
+        // Dynamically build the domain: project-123.app.domain.com
+        String domain = "project-" + projectId + "." + baseDomain;
+
+        // Use default port 80 format logic for clean URLs, or explicit ports for local testing
+        String formattedUrl = proxyPort.equals("80")
+                ? "http://" + domain
+                : "http://" + domain + ":" + proxyPort;
+
         Pod existingPod = findActivePod(projectId);
-        if(existingPod != null){
+
+        if (existingPod != null) {
+            log.info("Found existing pod {} for project {}. Resuming...", existingPod.getMetadata().getName(), projectId);
             registerRoute(domain, existingPod);
-            return new DeployResponse("http://"+domain+":" + REVERSE_PROXY_PORT);
+            return new DeployResponse(formattedUrl);
         }
-        return claimAndStartNewPod(projectId, domain);
+
+        return claimAndStartNewPod(projectId, domain, formattedUrl);
     }
 
-    private DeployResponse claimAndStartNewPod(Long projectId, String domain) {
-        Pod pod = client.pods().inNamespace(NAMESPACE)
-                .withLabel(POOL_LABEL, IDLE) // Look for idle pods to claim
-                .list()
-                .getItems()
-                .stream()
+    private Pod findActivePod(Long projectId) {
+        return client.pods().inNamespace(namespace)
+                .withLabel(PROJECT_LABEL, projectId.toString())
+                .withLabel(POOL_LABEL, BUSY)
+                .list().getItems().stream()
+                .filter(pod -> pod.getStatus().getPhase().equals("Running"))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("No available pods in the pool"));
+                .orElse(null);
+    }
+
+    private DeployResponse claimAndStartNewPod(Long projectId, String domain, String formattedUrl) {
+        Pod pod = client.pods().inNamespace(namespace)
+                .withLabel(POOL_LABEL, IDLE)
+                .list().getItems().stream()
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No idle runners available. Please scale up the runner-pool."));
 
         String podName = pod.getMetadata().getName();
         log.info("Claiming pod {} for project {}", podName, projectId);
 
-        client.pods().inNamespace(NAMESPACE)
-                .withName(podName)
-                .edit(p -> {
-                    p.getMetadata().getLabels().put(POOL_LABEL, BUSY); // Mark as busy
-                    p.getMetadata().getLabels().put(PROJECT_LABEL, projectId.toString());
-                    return p;
-                });
+        client.pods().inNamespace(namespace).withName(podName).edit(p -> {
+            p.getMetadata().getLabels().put(POOL_LABEL, BUSY);
+            p.getMetadata().getLabels().put(PROJECT_LABEL, projectId.toString());
+            return p;
+        });
 
         try {
-            // Syncer container setup: Initial sync + start watch mode
-            String initialSyncCmd = String.format(
-                    "mc mirror --overwrite myminio/projects/%d/ /app/",
-                    projectId
-            );
+            String initialSyncCmd = String.format("rm -rf /app/* && mc mirror --overwrite myminio/projects/%d/ /app/", projectId);
+            execCommand(podName, "syncer", "sh", "-c", initialSyncCmd);
 
-            log.info("Starting initial sync for project {} in pod {}", projectId, podName);
-            execCommand(podName, SYNCER_CONTAINER, "sh", "-c", initialSyncCmd);
+            String watchCmd = String.format("nohup mc mirror --overwrite --watch myminio/projects/%d/ /app/ > /app/sync.log 2>&1 &", projectId);
+            execCommand(podName, "syncer", "sh", "-c", watchCmd);
 
-            // Start watch command in background to keep syncing changes (SIGHUP)
-            String watchCmd = String.format(
-                    "nohup mc mirror --overwrite --watch myminio/projects/%d/ /app/ > /app/sync.log 2>&1 &",
-                    projectId);
-            execCommand(podName, SYNCER_CONTAINER, "sh", "-c", watchCmd);
-
-            // Runner container setup: Start the application
             String startCmd = "npm install && nohup npm run dev -- --host 0.0.0.0 --port 5173 > /app/dev.log 2>&1 &";
-            log.info("Starting dev server for project {}...", projectId);
-            execCommand(podName, RUNNER_CONTAINER, "sh", "-c", startCmd);
+            execCommand(podName, "runner", "sh", "-c", startCmd);
 
-            registerRoute(domain, pod);
+            Pod updatedPod = client.pods().inNamespace(namespace).withName(podName).get();
+            registerRoute(domain, updatedPod);
 
-            log.info("Deployment successful: http://{}:{}", domain, REVERSE_PROXY_PORT);
-            return new DeployResponse("http://" + domain + ":" + REVERSE_PROXY_PORT);
+            log.info("Deployment successful: {}", formattedUrl);
+            return new DeployResponse(formattedUrl);
 
-        }catch(Exception e){
-            log.error("Deployment failed for project {}. Releasing pod {}.", projectId, podName,e);
-            client.pods().inNamespace(NAMESPACE).withName(podName).delete();
-            throw new RuntimeException("Deployment failed with Id: " + projectId);
+        } catch (Exception e) {
+            log.error("Deployment failed for project {}. Releasing pod {}.", projectId, podName, e);
+            client.pods().inNamespace(namespace).withName(podName).delete();
+            throw new RuntimeException("Failed to deploy project " + projectId + ": " + e.getMessage(), e);
         }
     }
 
-    private void registerRoute(String domain, Pod pod){
+    private void registerRoute(String domain, Pod pod) {
         String podIp = pod.getStatus().getPodIP();
-        if(podIp == null) {
-            throw new RuntimeException("Pod IP is null for pod: " + pod.getMetadata().getName());
-        }
-        redisTemplate.opsForValue().set("route:" + domain, podIp + ":5173", 6, TimeUnit.HOURS); // Set route with TTL
+        if (podIp == null) throw new RuntimeException("Pod is running but has no IP!");
+
+        redisTemplate.opsForValue().set("route:" + domain, podIp + ":5173", 6, TimeUnit.HOURS);
+        log.info("Route Registered: {} -> {}", domain, podIp);
     }
 
     private void execCommand(String podName, String container, String... command) {
         log.debug("Exec in {}:{} -> {}", podName, container, String.join(" ", command));
+
         CompletableFuture<String> data = new CompletableFuture<>();
-        try (ExecWatch ignored = client.pods().inNamespace(NAMESPACE).withName(podName)
+        try (ExecWatch ignored = client.pods().inNamespace(namespace).withName(podName)
                 .inContainer(container)
                 .writingOutput(new ByteArrayOutputStream())
                 .writingError(new ByteArrayOutputStream())
@@ -117,27 +129,18 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
                     public void onClose(int code, String reason) {
                         data.complete("Done");
                     }
-                }).exec(command)) {
-            if(command[command.length - 1].trim().endsWith("&")) {
-                Thread.sleep(500);
-            }else{
-                data.get(20, TimeUnit.SECONDS); // Block for synchronous setup command(npm install)
-            }
-        }catch(Exception e){
-            log.error("Exec failed", e);
-            throw new RuntimeException("Pod Execution failed: " + e.getMessage());
-        }
-    }
+                })
+                .exec(command)) {
 
-    Pod findActivePod(Long projectId){
-        return client.pods().inNamespace(NAMESPACE)
-                .withLabel(PROJECT_LABEL, projectId.toString())
-                .withLabel(POOL_LABEL, BUSY) // Only consider busy pods as active, since idle pods are waiting for tasks
-                .list()
-                .getItems()
-                .stream()
-                .filter(pod -> pod.getStatus().getPhase().equals("Running"))
-                .findFirst()
-                .orElse(null);
+            if (command[command.length - 1].trim().endsWith("&")) {
+                Thread.sleep(500);
+            } else {
+                data.get(30, TimeUnit.SECONDS);
+            }
+
+        } catch (Exception e) {
+            log.error("Exec failed", e);
+            throw new RuntimeException("Pod Execution Failed", e);
+        }
     }
 }

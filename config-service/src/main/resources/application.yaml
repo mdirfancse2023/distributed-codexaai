@@ -12,4 +12,41 @@ spring:
 server:
   port: 8888
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    config:
+      enabled: false
+
+---
+
+spring:
+  config:
+    activate:
+        on-profile: k8s
+
+  application:
+    name:
+
+  cloud:
+    discovery:
+      enabled: false
+
+    config.server.git:
+      uri: https://github.com/mdirfancse2023/codexa-config-server
+      username: ${GIT_USERNAME}
+      password: ${GIT_PASSWORD}
+      default-label: main
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+
+
 
