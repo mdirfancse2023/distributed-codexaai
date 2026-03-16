@@ -59,3 +59,4 @@ jobs:
           -n codexa-ai
           
           kubectl rollout status deployment/${{ env.SERVICE_NAME }} -n codexa-ai
+          
