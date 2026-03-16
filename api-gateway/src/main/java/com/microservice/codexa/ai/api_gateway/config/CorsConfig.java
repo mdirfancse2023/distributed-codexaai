@@ -15,18 +15,24 @@ public class CorsConfig {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        corsConfig.setAllowedOrigins(Arrays.asList(
+
+        corsConfig.setAllowedOriginPatterns(Arrays.asList(
                 "http://*.sslip.io",
                 "http://*.codexaai.in",
-                "http://localhost:*",
-                "http://*.sslip.io.*"
+                "http://localhost:*"
         ));
-        corsConfig.setMaxAge(3600L);
-        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        corsConfig.setAllowedMethods(Arrays.asList(
+                "GET","POST","PUT","PATCH","DELETE","OPTIONS"
+        ));
+
         corsConfig.setAllowedHeaders(List.of("*"));
         corsConfig.setAllowCredentials(true);
+        corsConfig.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
         source.registerCorsConfiguration("/**", corsConfig);
 
         return new CorsWebFilter(source);
