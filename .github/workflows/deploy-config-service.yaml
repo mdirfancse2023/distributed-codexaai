@@ -9,7 +9,7 @@ on:
 
 env:
   SERVICE_NAME: config-service
-  IMAGE_NAME: mdirfancse2023/codexa-config-service
+  IMAGE_NAME: mdirfancse2023/codexa-ai-config-service
 
 permissions:
   id-token: write
