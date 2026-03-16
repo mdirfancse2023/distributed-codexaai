@@ -3,7 +3,7 @@ name: Deploy Config Service
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - 'config-service/**'
 
