@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codexa-frontend
+  namespace: codexa-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codexa-frontend
+  template:
+    metadata:
+      labels:
+        app: codexa-frontend
+    spec:
+      containers:
+        - name: codexa-frontend
+          image: mdirfancse2023/codexa-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codexa-frontend
+  namespace: codexa-ai
+spec:
+  type: ClusterIP
+  selector:
+    app: codexa-frontend
+  ports:
+    - port: 80
+      targetPort: 80
