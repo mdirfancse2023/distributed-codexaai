@@ -1,0 +1,101 @@
+############################
+# OS Files
+############################
+.DS_Store
+Thumbs.db
+*.swp
+
+############################
+# Logs
+############################
+logs/
+*.log
+*.out
+
+############################
+# Java / Maven
+############################
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+
+############################
+# Maven Wrapper
+############################
+.mvn/wrapper/maven-wrapper.jar
+
+############################
+# IntelliJ IDEA
+############################
+.idea/
+*.iws
+*.ipr
+*.iml
+out/
+
+############################
+# VS Code
+############################
+.vscode/
+
+############################
+# Node / Frontend (Preview runner)
+############################
+node_modules/
+dist/
+build/
+coverage/
+
+############################
+# Environment variables
+############################
+.env
+.env.*
+*.env
+
+############################
+# Docker
+############################
+docker-compose.override.yml
+*.tar
+
+############################
+# Kubernetes local configs
+############################
+kubeconfig
+*.kubeconfig
+
+############################
+# Temporary files
+############################
+tmp/
+temp/
+
+############################
+# Test outputs
+############################
+surefire-reports/
+failsafe-reports/
+
+############################
+# MinIO / Local storage
+############################
+data/
+uploads/
+
+############################
+# AI model caches
+############################
+.ollama/
+.huggingface/
+.cache/
+
+############################
+# Secrets
+############################
+secrets.yml
+application-secret.yml
+application-local.yml

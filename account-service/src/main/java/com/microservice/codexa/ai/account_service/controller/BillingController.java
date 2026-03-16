@@ -32,18 +32,18 @@ public class BillingController {
     @Value("${stripe.webhook.secret}")
     private String webhookSecret;
 
-    @GetMapping("api/me/subscription")
+    @GetMapping("/subscription")
     public ResponseEntity<SubscriptionResponse> getMySubscription() {
         return ResponseEntity.ok(subscriptionService.getCurrentSubscription()); // Placeholder response
     }
 
-    @PostMapping("/api/payments/checkout")
+    @PostMapping("/payments/checkout")
     public ResponseEntity<CheckoutResponse> createCheckoutSession(@RequestBody CheckoutRequest request) {
 
         return ResponseEntity.ok(paymentProcessor.createCheckoutSessionUrl(request)); // Placeholder response
     }
 
-    @PostMapping("/api/payments/portal")
+    @PostMapping("/payments/portal")
     public ResponseEntity<PortalResponse> openCustomerPortal() {
         return ResponseEntity.ok(paymentProcessor.openCustomerPortal()); // Placeholder response
     }

@@ -1,0 +1,25 @@
+# k8s/infra/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: codexa-ai
+
+---
+# to create separate ns for previews
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: codexa-previews
+
+---
+#configmap for shared config values across services
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codexa-shared-config
+  namespace: codexa-ai
+data:
+  PREVIEW_DOMAIN: "previews.34.10.18.19.sslip.io"
+  PREVIEW_NAMESPACE: "codexa-previews"
+  PROXY_PORT: "80"
+  APP_FRONTEND_URL: "http://codexa.34.10.18.19.sslip.io"

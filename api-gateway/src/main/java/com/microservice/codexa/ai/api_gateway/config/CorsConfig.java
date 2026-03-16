@@ -16,9 +16,9 @@ public class CorsConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
         corsConfig.setAllowedOrigins(Arrays.asList(
-                "http://codexa.ai",
-                "http://www.codexa.ai",
-                "http://localhost:5173"
+                "http://*.sslip.io",
+                "http://*.codexaai.in",
+                "http://localhost:*"
         ));
         corsConfig.setMaxAge(3600L);
         corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

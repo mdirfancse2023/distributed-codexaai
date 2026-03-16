@@ -82,14 +82,16 @@ public class AIGenerationServiceImpl implements AIGenerationService {
                 }).stream() // enable streaming
                 .chatResponse() // get streaming chat responses
                 .doOnNext(response -> { // for each streamed response chunk
-                    String content = response.getResult().getOutput().getText(); // extract content from response
-                    if(content != null && !content.isEmpty() && endTime.get() == 0L){ // set end time on first content receipt
-                        endTime.set(System.currentTimeMillis());
-                    }
-                    if(response.getMetadata().getUsage()!=null){
-                        usageRef.set(response.getMetadata().getUsage());
-                    }
-                    fullResponseBuffer.append(content); // accumulate the full response
+                    if(response.getResults()!=null && !response.getResults().isEmpty()) {
+                        String content = response.getResult().getOutput().getText(); // extract content from response
+                        if (content != null && !content.isEmpty() && endTime.get() == 0L) { // set end time on first content receipt
+                            endTime.set(System.currentTimeMillis());
+                        }
+                        if (response.getMetadata().getUsage() != null) {
+                            usageRef.set(response.getMetadata().getUsage());
+                        }
+                        fullResponseBuffer.append(content);
+                    }// accumulate the full response
                 }).doOnComplete(() -> { // when streaming is complete
                     Schedulers.boundedElastic().schedule(() -> { // offload to separate thread
                         Long duration = (endTime.get() - startTime.get()) / 1000;
@@ -98,8 +100,11 @@ public class AIGenerationServiceImpl implements AIGenerationService {
                 }).doOnError(error -> // handle errors
                     log.error("Error during AI chat response streaming for project: {}", projectId) // log error with project context
                 ).map(response -> {
-                    String text = response.getResult().getOutput().getText();
-                    return new StreamResponse(text != null ? text : ""); // map to response text
+                    if(response.getResults()!=null && !response.getResults().isEmpty()) {
+                        String text = response.getResult().getOutput().getText();
+                        return new StreamResponse(text != null ? text : "");
+                    }// map to response text
+                    return new StreamResponse("");
                 }); // map to response text
     }
 

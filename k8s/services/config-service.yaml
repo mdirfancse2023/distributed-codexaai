@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: config-service
-          image: mdirfancse2023/codexa-ai--config-service:latest
+          image: mdirfancse2023/codexa-ai-config-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8888

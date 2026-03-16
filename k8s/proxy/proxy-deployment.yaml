@@ -1,0 +1,50 @@
+# k8s/proxy/proxy-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codexa-ai-proxy
+  namespace: codexa-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codexa-ai-proxy
+  template:
+    metadata:
+      labels:
+        app: codexa-ai-proxy
+    spec:
+      containers:
+        - name: codexa-ai-proxy
+          image: mdirfancse2023/codexa-ai-proxy:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "250m"
+              memory: "512Mi"
+          envFrom:
+            - configMapRef:
+                name: codexa-shared-config
+          env:
+            - name: REDIS_URL
+              value: "redis://redis-0.redis.codexa-ai.svc.cluster.local:6379"
+            - name: PORT
+              value: "80"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codexa-ai-proxy
+  namespace: codexa-ai
+spec:
+  selector:
+    app: codexa-ai-proxy
+  ports:
+    - port: 80
+      targetPort: 80

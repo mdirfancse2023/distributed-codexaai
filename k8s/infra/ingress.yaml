@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: codexa-main-ingress
+  namespace: codexa-ai
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: "nginx"
+  rules:
+    # 1. Main Website Route (The Frontend!)
+    - host: "codexa.34.10.18.19.sslip.io"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: codexa-frontend
+                port:
+                  number: 80
+
+    # 2. Previews Route
+    - host: "*.previews.34.10.18.19.sslip.io"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: codexa-ai-proxy
+                port:
+                  number: 80
+
+    # 3. API Gateway Route
+    - host: "api.34.10.18.19.sslip.io"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 80
