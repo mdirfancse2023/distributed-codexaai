@@ -8,7 +8,7 @@ on:
       - 'workspace-service/**'
 
 env:
-  SERVICE_NAME: account-service
+  SERVICE_NAME: workspace-service
   IMAGE_NAME: mdirfancse2023/codexa-ai-workspace-service
 
 permissions:
