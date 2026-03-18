@@ -3,8 +3,9 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches:
-      - main
+    branches: # Specify your branches here
+      - main # The 'main' branch
+      - 'releases/*' # The release branches
 
 jobs:
   qodana:
@@ -13,27 +14,15 @@ jobs:
       contents: write
       pull-requests: write
       checks: write
-
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
-
-      - name: Qodana Scan
-        uses: JetBrains/qodana-action@v2025.2
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+          ref: ${{ github.event.pull_request.head.sha }}  # to check out the actual pull request commit, not the merge commit
+          fetch-depth: 0  # a full history is required for pull request analysis
+      - name: 'Qodana Scan'
+        uses: JetBrains/qodana-action@v2025.3
         with:
           pr-mode: false
-          use-caches: true
-          post-pr-comment: true
-          use-annotations: true
-          upload-result: true   # ✅ ENABLED
-          push-fixes: 'none'
-
-      # 🔥 ADD THIS (extra safety to download report)
-      - name: Upload Qodana Report Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: qodana-report
-          path: ${{ runner.temp }}/qodana/results
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_1135018953 }}
+          QODANA_ENDPOINT: 'https://qodana.cloud'
