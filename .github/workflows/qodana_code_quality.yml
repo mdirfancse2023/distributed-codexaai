@@ -1,8 +1,3 @@
-#-------------------------------------------------------------------------------#
-#            Discover all capabilities of Qodana in our documentation           #
-#             https://www.jetbrains.com/help/qodana/about-qodana.html           #
-#-------------------------------------------------------------------------------#
-
 name: Qodana
 on:
   workflow_dispatch:
@@ -18,21 +13,27 @@ jobs:
       contents: write
       pull-requests: write
       checks: write
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: 'Qodana Scan'
+
+      - name: Qodana Scan
         uses: JetBrains/qodana-action@v2025.2
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
-          # When pr-mode is set to true, Qodana analyzes only the files that have been changed
           pr-mode: false
           use-caches: true
           post-pr-comment: true
           use-annotations: true
-          # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
-          upload-result: false
-          # quick-fixes available in Ultimate and Ultimate Plus plans
+          upload-result: true   # ✅ ENABLED
           push-fixes: 'none'
+
+      # 🔥 ADD THIS (extra safety to download report)
+      - name: Upload Qodana Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qodana-report
+          path: ${{ runner.temp }}/qodana/results
