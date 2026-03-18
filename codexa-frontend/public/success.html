@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Successful</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: rgba(15, 23, 42, 0.08);
+      --primary: #111827;
+      --primary-text: #ffffff;
+      --accent: #16a34a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(22, 163, 74, 0.12), transparent 35%),
+        linear-gradient(180deg, #fbfcfe 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .card {
+      width: min(100%, 440px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+      padding: 32px;
+      text-align: center;
+    }
+
+    .icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(22, 163, 74, 0.12);
+      color: var(--accent);
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .actions {
+      margin-top: 28px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 999px;
+      background: var(--primary);
+      color: var(--primary-text);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .hint {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="icon">✓</div>
+    <h1>Payment succeeded</h1>
+    <p>Your subscription has been updated successfully. You will be redirected to your dashboard shortly.</p>
+    <div class="actions">
+      <a class="button" href="/projects">Go to dashboard</a>
+    </div>
+    <p class="hint">Redirecting in 3 seconds...</p>
+  </main>
+
+  <script>
+    window.setTimeout(function () {
+      window.location.replace("/projects");
+    }, 3000);
+  </script>
+</body>
+</html>
