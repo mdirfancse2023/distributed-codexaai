@@ -1,6 +1,6 @@
 import { ChatMessage, CheckoutResponse, DeployResponse, FileNode, LoginCredentials, LoginResponse, PortalResponse, ProjectSummaryResponse, ProjectRequest, ProjectResponse, ProjectMember, ProjectRole, SignupRequest, SubscriptionResponse, AuthResponse } from "./types";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://api.34.10.18.19.sslip.io";
+const BASE_URL = import.meta.env.VITE_API_URL || "https://api.34.10.18.19.sslip.io";
 
 export const getAuthToken = () => localStorage.getItem("auth_token");
 
@@ -78,7 +78,7 @@ function buildFileTree(paths: { path: string }[]): FileNode[] {
     console.error('buildFileTree: paths is not an array:', paths);
     return [];
   }
-  
+
   const root: FileNode[] = [];
   const nodeMap = new Map<string, FileNode>();
 
@@ -223,10 +223,10 @@ export const api = {
 
     const data = await response.json();
     console.log('Files response:', data);
-    
+
     // Handle different response formats
     let filePaths: { path: string }[] = [];
-    
+
     if (Array.isArray(data)) {
       // If data is directly an array of file objects
       filePaths = data.map(item => ({ path: item.path || item }));
@@ -237,7 +237,7 @@ export const api = {
       console.error('Unexpected files response format:', data);
       return [];
     }
-    
+
     return buildFileTree(filePaths);
   },
 
@@ -454,7 +454,7 @@ export const api = {
     onError: (error: Error) => void
   ) {
     const controller = new AbortController();
-    
+
     // Add timeout for the entire stream (5 minutes)
     const timeout = setTimeout(() => {
       controller.abort();
@@ -579,7 +579,7 @@ export const api = {
               }
             }
           }
-          
+
           clearTimeout(timeout);
           onComplete();
         } catch (readError) {

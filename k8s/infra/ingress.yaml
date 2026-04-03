@@ -6,8 +6,16 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: "nginx"
+  tls:
+    - hosts:
+        - "codexa.34.10.18.19.sslip.io"
+        - "*.previews.34.10.18.19.sslip.io"
+        - "api.34.10.18.19.sslip.io"
+      secretName: codexa-tls-secret
   rules:
     # 1. Main Website Route (The Frontend!)
     - host: "codexa.34.10.18.19.sslip.io"
