@@ -20,6 +20,8 @@ metadata:
   namespace: codexa-ai
 data:
   PREVIEW_DOMAIN: "previews.34.10.18.19.sslip.io"
+  PREVIEW_PATH_PREFIX: "/preview"
   PREVIEW_NAMESPACE: "codexa-previews"
   PROXY_PORT: "80"
+  FRONTEND_TARGET: "http://codexa-frontend.codexa-ai.svc.cluster.local:80"
   APP_FRONTEND_URL: "https://codexa.34.10.18.19.sslip.io"

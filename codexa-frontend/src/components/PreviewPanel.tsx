@@ -29,6 +29,11 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
     window.location.protocol === "https:" &&
     previewUrl.startsWith("http://")
   );
+  const usesSameOriginPreview = Boolean(
+    previewUrl &&
+    !opensExternallyOnly &&
+    new URL(previewUrl, window.location.origin).origin === window.location.origin
+  );
 
   useEffect(() => {
     setPreviewUrl(localStorage.getItem(previewStorageKey));
@@ -62,22 +67,10 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
     try {
       const response = await api.deploy(projectId);
       setPreviewUrl(response.previewUrl);
-      const mustOpenExternally =
-        window.location.protocol === "https:" &&
-        response.previewUrl.startsWith("http://");
-
-      if (mustOpenExternally) {
-        openPreviewInNewTab(response.previewUrl);
-        toast({
-          title: "Preview started",
-          description: "This preview uses HTTP, so it was opened in a new tab instead of the embedded panel.",
-        });
-      } else {
-        toast({
-          title: "Deployment successful",
-          description: "Your preview is now ready",
-        });
-      }
+      toast({
+        title: "Deployment successful",
+        description: "Your preview is now ready",
+      });
     } catch (error) {
       toast({
         title: "Deployment failed",
@@ -91,8 +84,11 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
   };
 
   const handleRefresh = () => {
-    if (previewUrl && opensExternallyOnly) {
-      openPreviewInNewTab(previewUrl);
+    if (opensExternallyOnly) {
+      toast({
+        title: "Preview requires HTTPS",
+        description: "This saved preview still uses HTTP. Run Preview again after the new deployment to load it in the embedded panel.",
+      });
       return;
     }
 
@@ -167,7 +163,7 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
             src={previewUrl}
             className="w-full h-full border-0"
             title="Preview"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            sandbox={usesSameOriginPreview ? "allow-scripts allow-forms allow-popups" : "allow-scripts allow-same-origin allow-forms allow-popups"}
             onLoad={() => setIsPreviewLoading(false)}
           />
         ) : previewUrl ? (

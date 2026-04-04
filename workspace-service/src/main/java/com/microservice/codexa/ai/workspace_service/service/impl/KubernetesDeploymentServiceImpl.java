@@ -25,14 +25,17 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     private final KubernetesClient client;
     private final StringRedisTemplate redisTemplate;
 
-    @Value("${app.preview.namespace}")
+    @Value("${app.preview.namespace:${PREVIEW_NAMESPACE}}")
     private String namespace;
 
-    @Value("${app.preview.domain}")
+    @Value("${app.preview.domain:${PREVIEW_DOMAIN}}")
     private String baseDomain;
 
-    @Value("${app.preview.proxy-port}")
-    private String proxyPort;
+    @Value("${app.frontend.url:${APP_FRONTEND_URL}}")
+    private String frontendUrl;
+
+    @Value("${app.preview.path-prefix:${PREVIEW_PATH_PREFIX:/preview}}")
+    private String previewPathPrefix;
 
     private static final String POOL_LABEL = "status";
     private static final String PROJECT_LABEL = "project-id";
@@ -40,13 +43,9 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     private static final String BUSY = "busy";
 
     public DeployResponse deploy(Long projectId) {
-        // Dynamically build the domain: project-123.app.domain.com
-        String domain = "project-" + projectId + "." + baseDomain;
-
-        // Use default port 80 format logic for clean URLs, or explicit ports for local testing
-        String formattedUrl = proxyPort.equals("80")
-                ? "http://" + domain
-                : "http://" + domain + ":" + proxyPort;
+        String previewKey = "project-" + projectId;
+        String domain = previewKey + "." + baseDomain;
+        String formattedUrl = buildPreviewUrl(previewKey);
 
         Pod existingPod = findActivePod(projectId);
 
@@ -57,6 +56,17 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         }
 
         return claimAndStartNewPod(projectId, domain, formattedUrl);
+    }
+
+    private String buildPreviewUrl(String previewKey) {
+        String normalizedPrefix = previewPathPrefix.startsWith("/")
+                ? previewPathPrefix
+                : "/" + previewPathPrefix;
+        String normalizedFrontendUrl = frontendUrl.endsWith("/")
+                ? frontendUrl.substring(0, frontendUrl.length() - 1)
+                : frontendUrl;
+
+        return normalizedFrontendUrl + normalizedPrefix + "/" + previewKey + "/";
     }
 
     private Pod findActivePod(Long projectId) {

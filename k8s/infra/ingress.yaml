@@ -15,7 +15,9 @@ spec:
         - "api.34.10.18.19.sslip.io"
       secretName: codexa-tls-secret
   rules:
-    # 1. Main Website Route (The Frontend!)
+    # 1. Main Website Route
+    # Route the main host through the proxy so HTTPS path-based previews can
+    # share the same certificate and still resolve Vite asset/HMR requests.
     - host: "codexa.34.10.18.19.sslip.io"
       http:
         paths:
@@ -23,7 +25,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: codexa-frontend
+                name: codexa-ai-proxy
                 port:
                   number: 80
 
