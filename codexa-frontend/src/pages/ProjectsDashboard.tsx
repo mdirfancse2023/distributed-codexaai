@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+const BILLING_SYNC_STORAGE_KEY = "codexa-billing-sync-pending";
+
 export function ProjectsDashboard() {
     const navigate = useNavigate();
     const { toast } = useToast();
@@ -44,6 +46,52 @@ export function ProjectsDashboard() {
         fetchProjects();
         fetchSubscription();
     }, [authenticated]);
+
+    useEffect(() => {
+        if (!authenticated) return;
+        if (sessionStorage.getItem(BILLING_SYNC_STORAGE_KEY) !== "1") return;
+
+        let cancelled = false;
+        let timeoutId: ReturnType<typeof window.setTimeout> | null = null;
+        let attempt = 0;
+
+        const syncSubscription = async () => {
+            attempt += 1;
+
+            const latestSubscription = await api.getCurrentSubscription();
+            if (cancelled) return;
+
+            if (latestSubscription) {
+                setSubscription(latestSubscription);
+            }
+
+            const syncedPlanName = latestSubscription?.plan?.name?.trim().toUpperCase();
+            if (syncedPlanName && syncedPlanName !== "FREE") {
+                sessionStorage.removeItem(BILLING_SYNC_STORAGE_KEY);
+                toast({
+                    title: "Subscription updated",
+                    description: `${latestSubscription.plan.name} is now active.`,
+                });
+                return;
+            }
+
+            if (attempt >= 8) {
+                sessionStorage.removeItem(BILLING_SYNC_STORAGE_KEY);
+                return;
+            }
+
+            timeoutId = window.setTimeout(syncSubscription, 2000);
+        };
+
+        void syncSubscription();
+
+        return () => {
+            cancelled = true;
+            if (timeoutId) {
+                window.clearTimeout(timeoutId);
+            }
+        };
+    }, [authenticated, toast]);
 
     useEffect(() => {
         if (!authenticated || projects.length === 0) return;

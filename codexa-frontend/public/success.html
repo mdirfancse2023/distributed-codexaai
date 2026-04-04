@@ -105,12 +105,29 @@
     <h1>Payment succeeded</h1>
     <p>Your subscription has been updated successfully. You will be redirected to your dashboard shortly.</p>
     <div class="actions">
-      <a class="button" href="/projects">Go to dashboard</a>
+      <a class="button" href="/projects" id="go-dashboard">Go to dashboard</a>
     </div>
     <p class="hint">Redirecting in 3 seconds...</p>
   </main>
 
   <script>
+    function markBillingSyncPending() {
+      try {
+        window.sessionStorage.setItem("codexa-billing-sync-pending", "1");
+      } catch (error) {
+        console.warn("Unable to persist billing sync state", error);
+      }
+    }
+
+    var dashboardLink = document.getElementById("go-dashboard");
+    if (dashboardLink) {
+      dashboardLink.addEventListener("click", function () {
+        markBillingSyncPending();
+      });
+    }
+
+    markBillingSyncPending();
+
     window.setTimeout(function () {
       window.location.replace("/projects");
     }, 3000);

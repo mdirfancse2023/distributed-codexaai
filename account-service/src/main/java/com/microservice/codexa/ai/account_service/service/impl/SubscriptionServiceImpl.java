@@ -90,6 +90,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         }
         if(hasSubscriptionBeenUpdated){
             log.debug("Updating subscription {} with new details", gatewaySubscriptionId);
+            subscriptionRepository.save(subscription);
         }
     }
 
