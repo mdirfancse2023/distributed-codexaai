@@ -6,14 +6,12 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: "nginx"
   tls:
     - hosts:
         - "codexa.34.10.18.19.sslip.io"
-        - "*.previews.34.10.18.19.sslip.io"
         - "api.34.10.18.19.sslip.io"
       secretName: codexa-tls-secret
   rules:
@@ -29,19 +27,7 @@ spec:
                 port:
                   number: 80
 
-    # 2. Previews Route
-    - host: "*.previews.34.10.18.19.sslip.io"
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: codexa-ai-proxy
-                port:
-                  number: 80
-
-    # 3. API Gateway Route
+    # 2. API Gateway Route
     - host: "api.34.10.18.19.sslip.io"
       http:
         paths:
@@ -50,5 +36,32 @@ spec:
             backend:
               service:
                 name: api-gateway
+                port:
+                  number: 80
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: codexa-preview-ingress
+  namespace: codexa-ai
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # sslip.io wildcard preview hosts cannot use a trusted wildcard cert here,
+    # so keep preview traffic on HTTP instead of redirecting to HTTPS.
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+spec:
+  ingressClassName: "nginx"
+  rules:
+    - host: "*.previews.34.10.18.19.sslip.io"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: codexa-ai-proxy
                 port:
                   number: 80

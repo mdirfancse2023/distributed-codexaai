@@ -17,6 +17,7 @@ public class CorsConfig {
                 CorsConfiguration corsConfig = new CorsConfiguration();
 
                 corsConfig.setAllowedOriginPatterns(Arrays.asList(
+                                "http://*.sslip.io",
                                 "https://*.sslip.io",
                                 "https://*.codexaai.in",
                                 "http://localhost:*"));

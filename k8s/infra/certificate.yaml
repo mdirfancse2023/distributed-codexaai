@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: codexa-cert
+  namespace: codexa-ai
+spec:
+  secretName: codexa-tls-secret
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - codexa.34.10.18.19.sslip.io
+    - api.34.10.18.19.sslip.io
