@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Play, Loader2, ExternalLink, RefreshCw, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { api, getPreviewUrlStorageKey } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -23,16 +24,12 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
   });
   const [isDeploying, setIsDeploying] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [previewLoadProgress, setPreviewLoadProgress] = useState(0);
   const { toast } = useToast();
   const opensExternallyOnly = Boolean(
     previewUrl &&
     window.location.protocol === "https:" &&
     previewUrl.startsWith("http://")
-  );
-  const usesSameOriginPreview = Boolean(
-    previewUrl &&
-    !opensExternallyOnly &&
-    new URL(previewUrl, window.location.origin).origin === window.location.origin
   );
 
   useEffect(() => {
@@ -42,10 +39,34 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
   useEffect(() => {
     if (previewUrl && !opensExternallyOnly) {
       setIsPreviewLoading(true);
+      setPreviewLoadProgress((current) => (current > 5 ? current : 8));
     } else {
       setIsPreviewLoading(false);
+      setPreviewLoadProgress(0);
     }
   }, [opensExternallyOnly, previewUrl]);
+
+  useEffect(() => {
+    if (!isPreviewLoading) {
+      setPreviewLoadProgress(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setPreviewLoadProgress((current) => {
+        if (current >= 92) {
+          return current;
+        }
+
+        const increment = current < 40 ? 10 : current < 70 ? 6 : 3;
+        return Math.min(92, current + increment);
+      });
+    }, 400);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isPreviewLoading]);
 
   // Store previewUrl in localStorage when it changes
   useEffect(() => {
@@ -63,6 +84,7 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
   const handleDeploy = async () => {
     setIsDeploying(true);
     setIsPreviewLoading(true);
+    setPreviewLoadProgress(12);
 
     try {
       const response = await api.deploy(projectId);
@@ -94,6 +116,7 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
 
     if (iframeRef.current) {
       setIsPreviewLoading(true);
+      setPreviewLoadProgress(18);
       iframeRef.current.src = iframeRef.current.src;
     }
   };
@@ -154,6 +177,16 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
         </div>
       </div>
 
+      {isPreviewLoading && !opensExternallyOnly ? (
+        <div className="shrink-0 border-b border-border/40 bg-panel/80 px-3 py-2">
+          <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground sm:text-xs">
+            <span>Opening preview in the panel</span>
+            <span>{Math.round(previewLoadProgress)}%</span>
+          </div>
+          <Progress value={previewLoadProgress} className="mt-2 h-1.5 bg-muted/60" />
+        </div>
+      ) : null}
+
       {/* Preview Area */}
       <div className="relative flex-1 bg-[#1a1a1a]">
         {previewUrl && !opensExternallyOnly ? (
@@ -163,8 +196,13 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
             src={previewUrl}
             className="w-full h-full border-0"
             title="Preview"
-            sandbox={usesSameOriginPreview ? "allow-scripts allow-forms allow-popups" : "allow-scripts allow-same-origin allow-forms allow-popups"}
-            onLoad={() => setIsPreviewLoading(false)}
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            onLoad={() => {
+              setPreviewLoadProgress(100);
+              window.setTimeout(() => {
+                setIsPreviewLoading(false);
+              }, 500);
+            }}
           />
         ) : previewUrl ? (
           <div className="flex h-full flex-col items-center justify-center text-center p-8">
@@ -210,9 +248,9 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-muted/20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <p className="text-sm font-medium text-foreground">Preview will be ready shortly</p>
+            <p className="text-sm font-medium text-foreground">Opening your preview</p>
             <p className="mt-2 max-w-sm text-xs text-muted-foreground">
-              Your project is starting up. This can take a few seconds while the preview server finishes preparing.
+              We are waiting for the preview app to finish booting so it can open directly inside this panel.
             </p>
           </div>
         )}
