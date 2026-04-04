@@ -193,9 +193,9 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-muted/20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <p className="text-sm font-medium text-foreground">Preview will be ready shortly</p>
+            <p className="text-sm font-medium text-foreground">Starting preview</p>
             <p className="mt-2 max-w-sm text-xs text-muted-foreground">
-              We are creating your preview environment and connecting it to this project.
+              We are preparing your preview environment. If it cannot be embedded here, the preview panel will switch to the external preview message instead.
             </p>
           </div>
         ) : (
