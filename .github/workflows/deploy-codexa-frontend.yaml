@@ -39,6 +39,8 @@ jobs:
           context: ./codexa-frontend
           file: ./codexa-frontend/Dockerfile
           push: true
+          build-args: |
+            VITE_UNSPLASH_ACCESS_KEY=${{ secrets.VITE_UNSPLASH_ACCESS_KEY }}
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:latest

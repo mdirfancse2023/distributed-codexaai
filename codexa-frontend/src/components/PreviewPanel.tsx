@@ -147,7 +147,7 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
             </div>
 
             {isPreviewLoading && !opensExternallyOnly ? (
-              <Progress value={previewLoadProgress} className="mt-1 h-1 bg-muted/50" />
+              <Progress value={previewLoadProgress} className="mt-1 h-0.5 bg-muted/50" />
             ) : null}
           </div>
 
