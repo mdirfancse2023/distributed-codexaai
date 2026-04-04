@@ -212,6 +212,9 @@ export function ProjectsDashboard() {
 
     const currentPlan = subscription?.plan;
     const currentPlanName = (currentPlan?.name || "FREE").toUpperCase();
+    const currentPlanBadgeLabel = currentPlan?.name
+        ? currentPlan.name.replace(/^codexa\s+/i, "").toUpperCase()
+        : "FREE";
     const hasUnlimitedAi = (plan: PlanResponse) => Boolean(plan.unlimitedAi ?? plan.unlimtedAi);
 
     const getPlanPriceLabel = (plan: PlanResponse) => {
@@ -284,9 +287,13 @@ export function ProjectsDashboard() {
                                     <button
                                         type="button"
                                         disabled={isOpeningPortal}
-                                        className="inline-flex h-8 max-w-[92px] items-center overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-primary bg-primary px-2 text-xs font-bold uppercase tracking-normal text-primary-foreground shadow-sm disabled:opacity-70 sm:h-8 sm:max-w-none sm:px-2.5 sm:text-[11px] sm:tracking-[0.12em]"
+                                        className="inline-flex h-8 min-w-[58px] max-w-[78px] items-center justify-center overflow-hidden rounded-md border border-primary bg-primary px-2 text-[10px] font-bold uppercase tracking-normal text-primary-foreground shadow-sm disabled:opacity-70 sm:h-8 sm:min-w-0 sm:max-w-none sm:px-2.5 sm:text-[11px] sm:tracking-[0.12em]"
                                     >
-                                        {isOpeningPortal ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : currentPlanName}
+                                        {isOpeningPortal ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                            <span className="max-w-full truncate">{currentPlanBadgeLabel}</span>
+                                        )}
                                     </button>
                                 </PopoverTrigger>
                                 <PopoverContent

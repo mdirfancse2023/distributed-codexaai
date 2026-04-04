@@ -69,6 +69,7 @@ export function LoginModal() {
               <Bot className="h-6 w-6 text-primary sm:h-7 sm:w-7" />
             </div>
             <h1 className="text-2xl font-semibold text-foreground mb-2">Welcome to Codexa AI</h1>
+            <p className="mb-2 text-sm font-medium text-primary/80">by Md Irfan</p>
             <p className="text-muted-foreground text-sm">Sign in to continue building</p>
           </div>
 
