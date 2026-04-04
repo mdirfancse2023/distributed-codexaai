@@ -57,7 +57,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { api, getPreviewUrlStorageKey, isAuthenticated, removeAuthToken, getUserInfo, removeUserInfo } from "@/lib/api";
+import { api, AUTH_EXPIRED_MESSAGE, clearAuthState, getPreviewUrlStorageKey, getUserInfo } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -66,6 +66,7 @@ import { generateGradient, getProjectIcon, cn } from "@/lib/utils";
 import { PlanResponse, ProjectResponse, SubscriptionResponse } from "@/lib/types";
 import { ShareDialog } from "@/components/ShareDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useProtectedSession } from "@/hooks/use-protected-session";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 type ViewMode = "code" | "preview";
@@ -76,6 +77,7 @@ export function ProjectView() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const authenticated = useProtectedSession();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -149,13 +151,9 @@ export function ProjectView() {
     });
   };
 
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
-  }
-
   // Load chat history on mount
   useEffect(() => {
-    if (!projectId) return;
+    if (!authenticated || !projectId) return;
 
     const loadData = async () => {
       setIsLoadingHistory(true);
@@ -186,6 +184,10 @@ export function ProjectView() {
         setMessages(formattedMessages);
         setProject(projectData);
       } catch (error) {
+        if (error instanceof Error && error.message === AUTH_EXPIRED_MESSAGE) {
+          return;
+        }
+
         console.error("Failed to load project data:", error);
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         toast({
@@ -199,20 +201,29 @@ export function ProjectView() {
     };
 
     loadData();
-  }, [projectId, toast]);
+  }, [authenticated, projectId, toast]);
 
   useEffect(() => {
+    if (!authenticated) return;
+
     const loadSubscription = async () => {
-      const subscriptionData = await api.getCurrentSubscription();
-      setSubscription(subscriptionData);
+      try {
+        const subscriptionData = await api.getCurrentSubscription();
+        setSubscription(subscriptionData);
+      } catch (error) {
+        if (error instanceof Error && error.message === AUTH_EXPIRED_MESSAGE) {
+          return;
+        }
+
+        console.error("Failed to load subscription:", error);
+      }
     };
 
     loadSubscription();
-  }, []);
+  }, [authenticated]);
 
   const handleLogout = () => {
-    removeAuthToken();
-    removeUserInfo();
+    clearAuthState();
     navigate("/login", { replace: true });
   };
 
@@ -535,6 +546,10 @@ Please analyze this error and fix the code to resolve it.`;
       toast({ title: "Error", description: "Failed to rename project", variant: "destructive" });
     }
   };
+
+  if (!authenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (!projectId) {
     return (

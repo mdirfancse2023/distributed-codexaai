@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { api, removeAuthToken, removeUserInfo, getUserInfo, isAuthenticated } from "@/lib/api";
+import { api, AUTH_EXPIRED_MESSAGE, clearAuthState, getUserInfo } from "@/lib/api";
+import { useProtectedSession } from "@/hooks/use-protected-session";
 import { PlanResponse, ProjectSummaryResponse, SubscriptionResponse } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { fetchProjectThumbnail, generateGradient, cn } from "@/lib/utils";
@@ -34,15 +35,13 @@ export function ProjectsDashboard() {
     const [isOpeningPortal, setIsOpeningPortal] = useState(false);
     const [checkoutPlanId, setCheckoutPlanId] = useState<number | null>(null);
     const [isPlanPopoverOpen, setIsPlanPopoverOpen] = useState(false);
-
-    if (!isAuthenticated()) {
-        return <Navigate to="/login" replace />;
-    }
+    const authenticated = useProtectedSession();
 
     useEffect(() => {
+        if (!authenticated) return;
         fetchProjects();
         fetchSubscription();
-    }, []);
+    }, [authenticated]);
 
     const upgradePlans: PlanResponse[] = [
         { id: 1, name: "Codexa Pro", maxProjects: 100, maxTokensPerDay: 1000000, unlimitedAi: true },
@@ -68,6 +67,10 @@ export function ProjectsDashboard() {
             setProjects(data);
             await hydrateProjectThumbnails(data);
         } catch (error) {
+            if (error instanceof Error && error.message === AUTH_EXPIRED_MESSAGE) {
+                return;
+            }
+
             console.error("Failed to fetch projects:", error);
             toast({
                 title: "Error",
@@ -84,6 +87,10 @@ export function ProjectsDashboard() {
             const subscriptionData = await api.getCurrentSubscription();
             setSubscription(subscriptionData);
         } catch (error) {
+            if (error instanceof Error && error.message === AUTH_EXPIRED_MESSAGE) {
+                return;
+            }
+
             console.error("Failed to load subscription:", error);
         }
     };
@@ -177,8 +184,7 @@ export function ProjectsDashboard() {
     };
 
     const handleLogout = () => {
-        removeAuthToken();
-        removeUserInfo();
+        clearAuthState();
         navigate("/login", { replace: true });
     };
 
@@ -232,6 +238,10 @@ export function ProjectsDashboard() {
     const filteredProjects = projects.filter((project) =>
         project.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    if (!authenticated) {
+        return <Navigate to="/login" replace />;
+    }
 
     return (
         <>

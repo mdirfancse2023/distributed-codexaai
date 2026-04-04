@@ -1,18 +1,64 @@
 import { ChatMessage, CheckoutResponse, DeployResponse, FileNode, LoginCredentials, LoginResponse, PortalResponse, ProjectSummaryResponse, ProjectRequest, ProjectResponse, ProjectMember, ProjectRole, SignupRequest, SubscriptionResponse, AuthResponse } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "https://api.34.10.18.19.sslip.io";
+const AUTH_TOKEN_KEY = "auth_token";
+const USER_INFO_KEY = "user_info";
+const AUTH_EXPIRY_SKEW_MS = 30_000;
 
-export const getAuthToken = () => localStorage.getItem("auth_token");
+export const AUTH_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
+export const AUTH_STATE_CHANGED_EVENT = "codexa-auth-state-changed";
 
-export const setAuthToken = (token: string) => localStorage.setItem("auth_token", token);
+type StoredUserInfo = { id: number; username: string; name: string };
 
-export const removeAuthToken = () => localStorage.removeItem("auth_token");
+const decodeJwtPayload = (token: string): { exp?: number } | null => {
+  const [, payload] = token.split(".");
+  if (!payload) return null;
+
+  try {
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    return JSON.parse(atob(padded)) as { exp?: number };
+  } catch {
+    return null;
+  }
+};
+
+const isTokenExpired = (token: string) => {
+  const payload = decodeJwtPayload(token);
+  if (!payload?.exp) return false;
+
+  return payload.exp * 1000 <= Date.now() + AUTH_EXPIRY_SKEW_MS;
+};
+
+const dispatchAuthStateChanged = () => {
+  window.dispatchEvent(new Event(AUTH_STATE_CHANGED_EVENT));
+};
+
+export const getAuthToken = () => {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (!token || isTokenExpired(token)) return null;
+  return token;
+};
+
+export const setAuthToken = (token: string) => {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+  dispatchAuthStateChanged();
+};
+
+export const removeAuthToken = () => {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  dispatchAuthStateChanged();
+};
 
 export const isAuthenticated = () => !!getAuthToken();
 
-const getAuthHeaders = (): HeadersInit => {
-  const token = getAuthToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+export const clearAuthState = (emitEvent = true) => {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(USER_INFO_KEY);
+
+  if (emitEvent) {
+    dispatchAuthStateChanged();
+  }
 };
 
 const parseErrorResponse = async (response: Response, fallbackMessage: string) => {
@@ -49,16 +95,52 @@ const parseErrorResponse = async (response: Response, fallbackMessage: string) =
 };
 
 // User info storage
-export const setUserInfo = (user: { id: number; username: string; name: string }) => {
-  localStorage.setItem("user_info", JSON.stringify(user));
+export const setUserInfo = (user: StoredUserInfo) => {
+  localStorage.setItem(USER_INFO_KEY, JSON.stringify(user));
 };
 
-export const getUserInfo = (): { id: number; username: string; name: string } | null => {
-  const userInfo = localStorage.getItem("user_info");
-  return userInfo ? JSON.parse(userInfo) : null;
+export const getUserInfo = (): StoredUserInfo | null => {
+  if (!isAuthenticated()) {
+    return null;
+  }
+
+  const userInfo = localStorage.getItem(USER_INFO_KEY);
+  if (!userInfo) return null;
+
+  try {
+    return JSON.parse(userInfo) as StoredUserInfo;
+  } catch {
+    return null;
+  }
 };
 
-export const removeUserInfo = () => localStorage.removeItem("user_info");
+export const removeUserInfo = () => localStorage.removeItem(USER_INFO_KEY);
+
+const createAuthedHeaders = (headers?: HeadersInit) => {
+  const token = getAuthToken();
+  if (!token) {
+    clearAuthState();
+    throw new Error(AUTH_EXPIRED_MESSAGE);
+  }
+
+  const mergedHeaders = new Headers(headers);
+  mergedHeaders.set("Authorization", `Bearer ${token}`);
+  return mergedHeaders;
+};
+
+const authedFetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
+  const response = await fetch(input, {
+    ...init,
+    headers: createAuthedHeaders(init.headers),
+  });
+
+  if (response.status === 401) {
+    clearAuthState();
+    throw new Error(AUTH_EXPIRED_MESSAGE);
+  }
+
+  return response;
+};
 
 // LocalStorage keys
 export const PREVIEW_URL_KEY = "preview_url";
@@ -167,9 +249,7 @@ export const api = {
 
   async getCurrentSubscription(): Promise<SubscriptionResponse | null> {
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/account/subscription`, {
-        headers: { ...getAuthHeaders() },
-      });
+      const response = await authedFetch(`${BASE_URL}/api/v1/account/subscription`);
 
       if (!response.ok) {
         const error = await response.text();
@@ -184,9 +264,9 @@ export const api = {
   },
 
   async createCheckoutSession(planId: number): Promise<CheckoutResponse> {
-    const response = await fetch(`${BASE_URL}/api/v1/account/payments/checkout`, {
+    const response = await authedFetch(`${BASE_URL}/api/v1/account/payments/checkout`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ planId }),
     });
 
@@ -199,9 +279,8 @@ export const api = {
   },
 
   async openBillingPortal(): Promise<PortalResponse> {
-    const response = await fetch(`${BASE_URL}/api/v1/account/payments/portal`, {
+    const response = await authedFetch(`${BASE_URL}/api/v1/account/payments/portal`, {
       method: "POST",
-      headers: { ...getAuthHeaders() },
     });
 
     if (!response.ok) {
@@ -213,9 +292,7 @@ export const api = {
   },
 
   async getFiles(projectId: string): Promise<FileNode[]> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/files`, {
-      headers: { ...getAuthHeaders() },
-    });
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/files`);
 
     if (!response.ok) {
       throw new Error("Failed to fetch files");
@@ -242,11 +319,9 @@ export const api = {
   },
 
   async getFileContent(projectId: string, path: string): Promise<string> {
-    const response = await fetch(
+    const response = await authedFetch(
       `${BASE_URL}/api/v1/workspace/projects/${projectId}/files/content?path=${path}`,
-      {
-        headers: { ...getAuthHeaders() },
-      }
+      {}
     );
 
     if (!response.ok) {
@@ -265,9 +340,8 @@ export const api = {
   },
 
   async deploy(projectId: string): Promise<DeployResponse> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/deploy`, {
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/deploy`, {
       method: "POST",
-      headers: { ...getAuthHeaders() },
     });
 
     if (!response.ok) {
@@ -278,9 +352,7 @@ export const api = {
   },
 
   async getProjects(): Promise<ProjectSummaryResponse[]> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects`, {
-      headers: { ...getAuthHeaders() },
-    });
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects`);
 
     if (!response.ok) {
       throw new Error("Failed to fetch projects");
@@ -290,9 +362,9 @@ export const api = {
   },
 
   async createProject(name: string): Promise<ProjectSummaryResponse> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects`, {
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     });
 
@@ -304,9 +376,7 @@ export const api = {
   },
 
   async getProject(id: string): Promise<ProjectResponse> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects/${id}`, {
-      headers: { ...getAuthHeaders() },
-    });
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${id}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -318,9 +388,9 @@ export const api = {
   },
 
   async updateProject(id: string, name: string): Promise<ProjectResponse> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects/${id}`, {
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     });
 
@@ -332,9 +402,8 @@ export const api = {
   },
 
   async deleteProject(id: string): Promise<void> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects/${id}`, {
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${id}`, {
       method: "DELETE",
-      headers: { ...getAuthHeaders() },
     });
 
     if (!response.ok) {
@@ -343,9 +412,7 @@ export const api = {
   },
 
   async downloadProjectZip(id: string): Promise<Blob> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects/${id}/files/download-zip`, {
-      headers: { ...getAuthHeaders() },
-    });
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${id}/files/download-zip`);
 
     if (!response.ok) {
       throw new Error("Failed to download project");
@@ -355,9 +422,7 @@ export const api = {
   },
 
   async getProjectMembers(projectId: string): Promise<ProjectMember[]> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/members`, {
-      headers: { ...getAuthHeaders() },
-    });
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/members`);
 
     if (!response.ok) {
       throw new Error("Failed to fetch project members");
@@ -379,9 +444,9 @@ export const api = {
   },
 
   async inviteMember(projectId: string, username: string, role: ProjectRole): Promise<ProjectMember | null> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/members`, {
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/members`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, role }),
     });
 
@@ -406,9 +471,9 @@ export const api = {
   },
 
   async updateMemberRole(projectId: string, userId: number, role: ProjectRole): Promise<void> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/members/${userId}`, {
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/members/${userId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role }),
     });
 
@@ -418,9 +483,8 @@ export const api = {
   },
 
   async removeMember(projectId: string, userId: number): Promise<void> {
-    const response = await fetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/members/${userId}`, {
+    const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${projectId}/members/${userId}`, {
       method: "DELETE",
-      headers: { ...getAuthHeaders() },
     });
 
     if (!response.ok) {
@@ -429,9 +493,7 @@ export const api = {
   },
 
   async getChatHistory(projectId: string): Promise<ChatMessage[]> {
-    const response = await fetch(`${BASE_URL}/api/v1/intelligence/chat/projects/${projectId}`, {
-      headers: { ...getAuthHeaders() },
-    });
+    const response = await authedFetch(`${BASE_URL}/api/v1/intelligence/chat/projects/${projectId}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -461,9 +523,9 @@ export const api = {
       onError(new Error("Request timeout - stream took too long"));
     }, 300000); // 5 minutes
 
-    fetch(`${BASE_URL}/api/v1/intelligence/chat/stream`, {
+    authedFetch(`${BASE_URL}/api/v1/intelligence/chat/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message, projectId }),
       signal: controller.signal,
     })

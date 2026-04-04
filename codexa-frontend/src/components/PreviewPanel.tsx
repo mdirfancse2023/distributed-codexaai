@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Play, Loader2, ExternalLink, RefreshCw, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, getPreviewUrlStorageKey } from "@/lib/api";
@@ -17,24 +17,30 @@ interface PreviewPanelProps {
 export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: PreviewPanelProps) {
   const isMobile = useIsMobile();
   const previewStorageKey = getPreviewUrlStorageKey(projectId);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(() => {
     return localStorage.getItem(previewStorageKey);
   });
   const [isDeploying, setIsDeploying] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const { toast } = useToast();
+  const opensExternallyOnly = Boolean(
+    previewUrl &&
+    window.location.protocol === "https:" &&
+    previewUrl.startsWith("http://")
+  );
 
   useEffect(() => {
     setPreviewUrl(localStorage.getItem(previewStorageKey));
   }, [previewStorageKey]);
 
   useEffect(() => {
-    if (previewUrl) {
+    if (previewUrl && !opensExternallyOnly) {
       setIsPreviewLoading(true);
     } else {
       setIsPreviewLoading(false);
     }
-  }, [previewUrl]);
+  }, [opensExternallyOnly, previewUrl]);
 
   // Store previewUrl in localStorage when it changes
   useEffect(() => {
@@ -45,6 +51,10 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
     }
   }, [previewStorageKey, previewUrl]);
 
+  const openPreviewInNewTab = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   const handleDeploy = async () => {
     setIsDeploying(true);
     setIsPreviewLoading(true);
@@ -52,10 +62,22 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
     try {
       const response = await api.deploy(projectId);
       setPreviewUrl(response.previewUrl);
-      toast({
-        title: "Deployment successful",
-        description: "Your preview is now ready",
-      });
+      const mustOpenExternally =
+        window.location.protocol === "https:" &&
+        response.previewUrl.startsWith("http://");
+
+      if (mustOpenExternally) {
+        openPreviewInNewTab(response.previewUrl);
+        toast({
+          title: "Preview started",
+          description: "This preview uses HTTP, so it was opened in a new tab instead of the embedded panel.",
+        });
+      } else {
+        toast({
+          title: "Deployment successful",
+          description: "Your preview is now ready",
+        });
+      }
     } catch (error) {
       toast({
         title: "Deployment failed",
@@ -69,10 +91,14 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
   };
 
   const handleRefresh = () => {
-    const iframe = document.querySelector("iframe");
-    if (iframe) {
+    if (previewUrl && opensExternallyOnly) {
+      openPreviewInNewTab(previewUrl);
+      return;
+    }
+
+    if (iframeRef.current) {
       setIsPreviewLoading(true);
-      iframe.src = iframe.src;
+      iframeRef.current.src = iframeRef.current.src;
     }
   };
 
@@ -134,8 +160,9 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
 
       {/* Preview Area */}
       <div className="relative flex-1 bg-[#1a1a1a]">
-        {previewUrl ? (
+        {previewUrl && !opensExternallyOnly ? (
           <iframe
+            ref={iframeRef}
             key={previewUrl}
             src={previewUrl}
             className="w-full h-full border-0"
@@ -143,6 +170,24 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             onLoad={() => setIsPreviewLoading(false)}
           />
+        ) : previewUrl ? (
+          <div className="flex h-full flex-col items-center justify-center text-center p-8">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-muted/20">
+              <ExternalLink className="h-8 w-8 text-primary" />
+            </div>
+            <p className="text-sm font-medium text-foreground">Preview is running in a new tab</p>
+            <p className="mt-2 max-w-sm text-xs text-muted-foreground">
+              This workspace is served over HTTPS, but your preview URL is currently HTTP. Browsers block HTTP previews inside a secure iframe, so use the external preview tab for now.
+            </p>
+            <Button
+              onClick={() => openPreviewInNewTab(previewUrl)}
+              className="mt-5"
+              size="sm"
+            >
+              <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+              Open Preview
+            </Button>
+          </div>
         ) : isDeploying ? (
           <div className="flex h-full flex-col items-center justify-center text-center p-8">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-muted/20">
