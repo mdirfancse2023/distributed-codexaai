@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Mail, Bot, User, Lock, AlertCircle } from "lucide-react";
 import { api, setAuthToken, setUserInfo } from "@/lib/api";
@@ -17,6 +17,10 @@ export default function Signup() {
     const [formError, setFormError] = useState<string | null>(null);
     const navigate = useNavigate();
     const { toast } = useToast();
+
+    useEffect(() => {
+        document.title = "Codexa AI by Md Irfan";
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

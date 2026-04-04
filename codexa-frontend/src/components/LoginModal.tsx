@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Lock, Mail, Bot, AlertCircle } from "lucide-react";
 import { api, setAuthToken, setUserInfo } from "@/lib/api";
@@ -16,6 +16,10 @@ export function LoginModal() {
   const [formError, setFormError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    document.title = "Codexa AI by Md Irfan";
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +68,7 @@ export function LoginModal() {
             <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-primary/20 mb-3 sm:mb-5 sm:h-14 sm:w-14">
               <Bot className="h-6 w-6 text-primary sm:h-7 sm:w-7" />
             </div>
-            <h1 className="text-2xl font-semibold text-foreground mb-2">Welcome to Codexa AI</h1>
+            <h1 className="text-2xl font-semibold text-foreground mb-2">Welcome to Codexa AI by Md Irfan</h1>
             <p className="text-muted-foreground text-sm">Sign in to continue building</p>
           </div>
 

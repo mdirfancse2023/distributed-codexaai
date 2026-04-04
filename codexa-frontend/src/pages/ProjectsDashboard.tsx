@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { Plus, LogOut, Search, Folder, Loader2, MoreVertical, Trash, Download, Edit, ArrowUpRight, Check, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,36 +36,55 @@ export function ProjectsDashboard() {
     const [checkoutPlanId, setCheckoutPlanId] = useState<number | null>(null);
     const [isPlanPopoverOpen, setIsPlanPopoverOpen] = useState(false);
     const authenticated = useProtectedSession();
+    const thumbnailRequestsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         if (!authenticated) return;
+        document.title = "Codexa AI by Md Irfan";
         fetchProjects();
         fetchSubscription();
     }, [authenticated]);
+
+    useEffect(() => {
+        if (!authenticated || projects.length === 0) return;
+
+        projects.forEach((project) => {
+            if (project.thumbnailUrl) return;
+
+            const requestKey = `${project.id}:${project.name.toLowerCase().trim()}`;
+            if (thumbnailRequestsRef.current.has(requestKey)) return;
+
+            thumbnailRequestsRef.current.add(requestKey);
+
+            void fetchProjectThumbnail(project.name)
+                .then((thumbnailUrl) => {
+                    if (!thumbnailUrl) return;
+
+                    setProjects((currentProjects) =>
+                        currentProjects.map((currentProject) =>
+                            currentProject.id === project.id &&
+                            currentProject.name === project.name &&
+                            !currentProject.thumbnailUrl
+                                ? { ...currentProject, thumbnailUrl }
+                                : currentProject
+                        )
+                    );
+                })
+                .finally(() => {
+                    thumbnailRequestsRef.current.delete(requestKey);
+                });
+        });
+    }, [authenticated, projects]);
 
     const upgradePlans: PlanResponse[] = [
         { id: 1, name: "Codexa Pro", maxProjects: 100, maxTokensPerDay: 1000000, unlimitedAi: true },
         { id: 2, name: "Codexa Plus", maxProjects: 25, maxTokensPerDay: 200000, unlimitedAi: false },
     ];
 
-    const hydrateProjectThumbnails = async (items: ProjectSummaryResponse[]) => {
-        const updates = await Promise.all(
-            items.map(async (project) => {
-                if (project.thumbnailUrl) return project;
-
-                const thumbnailUrl = await fetchProjectThumbnail(project.name);
-                return thumbnailUrl ? { ...project, thumbnailUrl } : project;
-            })
-        );
-
-        setProjects(updates);
-    };
-
     const fetchProjects = async () => {
         try {
             const data = await api.getProjects();
             setProjects(data);
-            await hydrateProjectThumbnails(data);
         } catch (error) {
             if (error instanceof Error && error.message === AUTH_EXPIRED_MESSAGE) {
                 return;
@@ -101,15 +120,12 @@ export function ProjectsDashboard() {
         setIsCreating(true);
         try {
             const newProject = await api.createProject(newProjectName);
-
-            const thumbnailUrl = await fetchProjectThumbnail(newProjectName);
             const updatedProject = {
                 ...newProject,
                 role: "OWNER",
-                ...(thumbnailUrl ? { thumbnailUrl } : {}),
             };
 
-            setProjects([updatedProject, ...projects]);
+            setProjects((currentProjects) => [updatedProject, ...currentProjects]);
             setNewProjectName("");
             setIsDialogOpen(false);
             toast({
@@ -173,7 +189,13 @@ export function ProjectsDashboard() {
 
         try {
             await api.updateProject(projectToRename.id.toString(), renameName);
-            setProjects(projects.map(p => p.id === projectToRename.id ? { ...p, name: renameName } : p));
+            setProjects((currentProjects) =>
+                currentProjects.map((project) =>
+                    project.id === projectToRename.id
+                        ? { ...project, name: renameName, thumbnailUrl: undefined }
+                        : project
+                )
+            );
             setIsRenameDialogOpen(false);
             setProjectToRename(null);
             toast({ title: "Success", description: "Project renamed successfully" });
@@ -253,7 +275,7 @@ export function ProjectsDashboard() {
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/20 sm:h-8 sm:w-8">
                                 <Folder className="h-[18px] w-[18px] text-primary sm:h-5 sm:w-5" />
                             </div>
-                            <span className="truncate whitespace-nowrap leading-none">Codexa AI</span>
+                            <span className="truncate whitespace-nowrap leading-none">Codexa AI by Md Irfan</span>
                         </div>
                         <div className="flex min-w-0 flex-nowrap items-center justify-end gap-1 sm:gap-2">
                             <ThemeToggle />

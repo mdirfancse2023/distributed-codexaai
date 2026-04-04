@@ -222,6 +222,14 @@ export function ProjectView() {
     loadSubscription();
   }, [authenticated]);
 
+  useEffect(() => {
+    document.title = project?.name ? `Codexa AI | ${project.name}` : "Codexa AI | Project";
+
+    return () => {
+      document.title = "Codexa AI by Md Irfan";
+    };
+  }, [project?.name]);
+
   const handleLogout = () => {
     clearAuthState();
     navigate("/login", { replace: true });
