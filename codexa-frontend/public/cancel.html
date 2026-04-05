@@ -113,13 +113,23 @@
     <div class="actions">
       <a class="button" href="/projects" id="go-dashboard">Return to dashboard</a>
     </div>
-    <p class="hint">Redirecting in 3 seconds...</p>
+    <p class="hint" id="countdown">Redirecting in 3 seconds...</p>
   </main>
 
   <script>
-    window.setTimeout(function () {
-      window.location.replace("/projects");
-    }, 3000);
+    var seconds = 3;
+    var countdownElement = document.getElementById("countdown");
+    
+    var interval = window.setInterval(function () {
+      seconds--;
+      if (countdownElement) {
+        countdownElement.innerText = "Redirecting in " + seconds + " seconds...";
+      }
+      if (seconds <= 0) {
+        window.clearInterval(interval);
+        window.location.replace("/projects");
+      }
+    }, 1000);
   </script>
 </body>
 </html>
