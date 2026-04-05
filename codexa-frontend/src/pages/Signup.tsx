@@ -64,11 +64,13 @@ export default function Signup() {
                     </div>
                     {/* Logo */}
                     <div className="text-center mb-5 sm:mb-8">
-                        <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-primary/20 mb-3 sm:mb-5 sm:h-14 sm:w-14">
-                            <Bot className="h-6 w-6 text-primary sm:h-7 sm:w-7" />
+                        <div className="flex flex-col items-center justify-center mb-3 sm:mb-5">
+                            <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-primary/20 mb-1.5 sm:h-14 sm:w-14">
+                                <Bot className="h-6 w-6 text-primary sm:h-7 sm:w-7" />
+                            </div>
+                            <span className="text-sm font-medium text-primary/80">Made by Md Irfan</span>
                         </div>
-                        <h1 className="text-2xl font-semibold text-foreground">Create an account</h1>
-                        <p className="mb-2 text-sm font-medium text-primary/80">by Md Irfan</p>
+                        <h1 className="text-2xl font-semibold text-foreground mb-2">Create an account</h1>
                         <p className="text-muted-foreground text-sm">Start building with AI-powered development</p>
                     </div>
 
