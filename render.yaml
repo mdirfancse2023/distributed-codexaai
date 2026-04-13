@@ -1,6 +1,14 @@
+databases:
+  - name: mental-health-db
+    databaseName: codexa
+    user: codexa_user
+    plan: free
+
 services:
   - type: web
     name: frontend-sgad
     runtime: node
-    buildCommand: cd codexa-frontend && npm install && npm run build
-    startCommand: npx serve -s codexa-frontend/dist -l $PORT
+    rootDir: codexa-frontend
+    buildCommand: npm install && npm run build
+    startCommand: npx serve -s dist -l $PORT
+    plan: free
