@@ -8,6 +8,18 @@ services:
     plan: free
 
   - type: web
+    name: config-server-sgad
+    runtime: docker
+    rootDir: config-service
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: GIT_USERNAME
+        sync: false
+      - key: GIT_PASSWORD
+        sync: false
+    plan: free
+
+  - type: web
     name: backend-sgad
     runtime: docker
     rootDir: .
@@ -18,11 +30,9 @@ services:
           name: mental-health-db
           property: connectionString
       - key: SPRING_CLOUD_CONFIG_ENABLED
-        value: "false"
-      - key: SPRING_CLOUD_CONFIG_FAIL_FAST
-        value: "false"
-      - key: SPRING_CONFIG_IMPORT
-        value: "optional:classpath:/"
+        value: "true"
+      - key: SPRING_CLOUD_CONFIG_URI
+        value: "http://config-server-sgad:8888"
       - key: SPRING_CLOUD_DISCOVERY_ENABLED
         value: "false"
       - key: EUREKA_CLIENT_ENABLED
