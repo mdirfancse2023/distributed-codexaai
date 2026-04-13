@@ -44,8 +44,14 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: render-free
+      - key: SPRING_DATASOURCE_URL
+        value: postgresql://codexa-postgres:5432/codexa
+      - key: SPRING_DATASOURCE_USERNAME
+        value: codexa-postgres
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: update
+      - key: JWT_SECRET
+        value: ${JWT_SECRET}
     healthCheck:
       path: /actuator/health
       initialDelaySeconds: 60
@@ -65,8 +71,14 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: render-free
+      - key: SPRING_DATASOURCE_URL
+        value: postgresql://codexa-postgres:5432/codexa
+      - key: SPRING_DATASOURCE_USERNAME
+        value: codexa-postgres
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: update
+      - key: OPENAI_API_KEY
+        value: ${OPENAI_API_KEY}
     healthCheck:
       path: /actuator/health
       initialDelaySeconds: 60
