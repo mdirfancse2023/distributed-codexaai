@@ -1,0 +1,107 @@
+# Render Free Tier Deployment Configuration for Codexa AI Microservices
+
+services:
+  # PostgreSQL Free Database (Render provides free PostgreSQL)
+  postgres:
+    type: postgres
+    name: codexa-postgres
+    ipAllowList: [] # Allow all internal connections
+    databaseName: codexa
+    user: user
+
+  # API Gateway (using single Dockerfile with build arg)
+  api-gateway:
+    type: pserv
+    name: codexa-api-gateway
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerBuildPath: .
+    buildArgs:
+      - key: SERVICE_NAME
+        value: api-gateway
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render-free
+      - key: ACCOUNT_SERVICE_URL
+        value: https://codexa-account-service.onrender.com
+      - key: INTELLIGENCE_SERVICE_URL
+        value: https://codexa-intelligence-service.onrender.com
+    healthCheck:
+      path: /actuator/health
+      initialDelaySeconds: 60
+      periodSeconds: 10
+
+  # Account Service
+  account-service:
+    type: pserv
+    name: codexa-account-service
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerBuildPath: .
+    buildArgs:
+      - key: SERVICE_NAME
+        value: account-service
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render-free
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
+    healthCheck:
+      path: /actuator/health
+      initialDelaySeconds: 60
+      periodSeconds: 10
+
+  # Intelligence Service
+  intelligence-service:
+    type: pserv
+    name: codexa-intelligence-service
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerBuildPath: .
+    buildArgs:
+      - key: SERVICE_NAME
+        value: intelligence-service
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render-free
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
+    healthCheck:
+      path: /actuator/health
+      initialDelaySeconds: 60
+      periodSeconds: 10
+
+  # Frontend (React)
+  frontend:
+    type: web
+    name: codexa-frontend
+    env: static
+    buildCommand: cd codexa-frontend && npm install && npm run build
+    publishPath: codexa-frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://codexa-api-gateway.onrender.com
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+# Global environment variables for all services
+globalEnvVars:
+  - key: JWT_SECRET
+    value: ${JWT_SECRET}
+  - key: OPENAI_API_KEY
+    value: ${OPENAI_API_KEY}
