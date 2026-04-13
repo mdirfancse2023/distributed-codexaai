@@ -29,7 +29,11 @@ services:
     rootDir: .
     dockerfilePath: ./Dockerfile
     envVars:
-      - key: DATABASE_URL
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
         sync: false
       - key: CONFIG_SERVER_URL
         value: "https://config-server-sgad.onrender.com"
