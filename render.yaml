@@ -14,16 +14,6 @@ services:
     dockerfilePath: ./Dockerfile
 
   - type: pserv
-    name: account-service
-    env: docker
-    dockerfilePath: ./Dockerfile
-
-  - type: pserv
-    name: workspace-service
-    env: docker
-    dockerfilePath: ./Dockerfile
-
-  - type: pserv
-    name: intelligence-service
+    name: merged-backend
     env: docker
     dockerfilePath: ./Dockerfile
