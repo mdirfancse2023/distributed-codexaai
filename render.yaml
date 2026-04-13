@@ -33,10 +33,14 @@ services:
         fromDatabase:
           name: mental-health-db
           property: connectionString
+      - key: CONFIG_SERVER_URL
+        value: "https://config-server-sgad.onrender.com"
       - key: SPRING_CLOUD_CONFIG_ENABLED
         value: "true"
       - key: SPRING_CLOUD_CONFIG_URI
         value: "https://config-server-sgad.onrender.com"
+      - key: SPRING_CLOUD_CONFIG_FAIL_FAST
+        value: "false"
       - key: SPRING_CLOUD_DISCOVERY_ENABLED
         value: "false"
       - key: EUREKA_CLIENT_ENABLED
