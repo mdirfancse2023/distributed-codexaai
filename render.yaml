@@ -6,11 +6,6 @@ services:
     startCommand: npx serve -s codexa-frontend/dist -l $PORT
 
   - type: pserv
-    name: api-gateway-sgad
-    env: docker
-    dockerfilePath: ./Dockerfile
-
-  - type: pserv
     name: backend-sgad
     env: docker
     dockerfilePath: ./Dockerfile

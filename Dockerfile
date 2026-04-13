@@ -13,14 +13,16 @@ WORKDIR /app
 COPY mvnw .
 COPY .mvn .mvn
 
-# Copy all service source files
+# Copy all service source files including API gateway
+COPY api-gateway/pom.xml ./gateway-pom.xml
 COPY account-service/pom.xml ./account-pom.xml
 COPY workspace-service/pom.xml ./workspace-pom.xml
 COPY intelligence-service/pom.xml ./intelligence-pom.xml
 COPY config-service/pom.xml ./config-pom.xml
 COPY discovery-service/pom.xml ./discovery-pom.xml
 
-# Copy all source code
+# Copy all source code including API gateway
+COPY api-gateway/src ./gateway-src
 COPY account-service/src ./account-src
 COPY workspace-service/src ./workspace-src
 COPY intelligence-service/src ./intelligence-src
