@@ -1,6 +1,8 @@
 databases:
   - name: postgres
     databaseName: codexa
+    user: codexa_user
+    plan: free
 
 services:
   - type: web
