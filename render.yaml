@@ -19,6 +19,10 @@ services:
           property: connectionString
       - key: SPRING_CLOUD_CONFIG_ENABLED
         value: "false"
+      - key: SPRING_CLOUD_CONFIG_FAIL_FAST
+        value: "false"
+      - key: SPRING_CONFIG_IMPORT
+        value: "optional:classpath:/"
       - key: SPRING_CLOUD_DISCOVERY_ENABLED
         value: "false"
       - key: EUREKA_CLIENT_ENABLED
