@@ -8,6 +8,7 @@ services:
     ipAllowList: [] # Allow all internal connections
     databaseName: codexa
     user: user
+    plan: free
 
   # API Gateway (using single Dockerfile with build arg)
   api-gateway:
@@ -99,9 +100,3 @@ services:
         source: /*
         destination: /index.html
 
-# Global environment variables for all services
-globalEnvVars:
-  - key: JWT_SECRET
-    value: ${JWT_SECRET}
-  - key: OPENAI_API_KEY
-    value: ${OPENAI_API_KEY}
