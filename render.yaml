@@ -9,7 +9,6 @@ services:
     name: frontend
     env: static
     buildCommand: cd codexa-frontend && npm install && npm run build
-    plan: free
 
   - type: pserv
     name: api-gateway
