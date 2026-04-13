@@ -30,9 +30,7 @@ services:
     dockerfilePath: ./Dockerfile
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: mental-health-db
-          property: connectionString
+        sync: false
       - key: CONFIG_SERVER_URL
         value: "https://config-server-sgad.onrender.com"
       - key: SPRING_CLOUD_CONFIG_ENABLED
