@@ -36,7 +36,7 @@ services:
       - key: SPRING_CLOUD_CONFIG_ENABLED
         value: "true"
       - key: SPRING_CLOUD_CONFIG_URI
-        value: "http://config-server-sgad:8888"
+        value: "https://config-server-sgad.onrender.com"
       - key: SPRING_CLOUD_DISCOVERY_ENABLED
         value: "false"
       - key: EUREKA_CLIENT_ENABLED
