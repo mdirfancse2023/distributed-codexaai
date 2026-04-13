@@ -3,8 +3,8 @@
 
 ARG SERVICE_NAME=merged-backend
 
-# Use OpenJDK 21 as base image
-FROM openjdk:21-jdk-slim as base
+# Use Eclipse Temurin OpenJDK 21 as base image
+FROM eclipse-temurin:21-jdk as base
 
 # Set working directory
 WORKDIR /app

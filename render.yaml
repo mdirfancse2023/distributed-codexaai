@@ -1,9 +1,3 @@
-databases:
-  - name: mental-health-db
-    databaseName: codexa
-    user: codexa_user
-    plan: free
-
 services:
   - type: web
     name: frontend-sgad
