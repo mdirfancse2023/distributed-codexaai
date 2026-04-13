@@ -1,24 +1,20 @@
 # Codexa AI Backend Dockerfile
-# Simplified build for merged backend service
+# Simplified build using standard Maven
 
 ARG SERVICE_NAME=backend-sgad
 
-# Use Eclipse Temurin OpenJDK 21 as base image
-FROM eclipse-temurin:21-jdk as build
+# Use Eclipse Temurin OpenJDK 21 with Maven as base image
+FROM maven:3.9-eclipse-temurin-21 as build
 
 # Set working directory
 WORKDIR /app
-
-# Copy project files
-COPY pom.xml ./
-COPY mvnw .*
 
 # Copy source code
 COPY account-service/src ./src
 COPY account-service/pom.xml ./
 
 # Build the application
-RUN chmod +x mvnw && ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:21-jre
