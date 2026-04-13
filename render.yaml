@@ -3,45 +3,31 @@ databases:
     databaseName: codexa
 
 services:
-  - type: pserv
-    name: codexa-api-gateway
-    env: docker
-    dockerfilePath: ./Dockerfile
-    buildArgs:
-      SERVICE_NAME: api-gateway
-    envVars:
-      SPRING_PROFILES_ACTIVE: render-free
-      ACCOUNT_SERVICE_URL: https://codexa-account-service.onrender.com
-      INTELLIGENCE_SERVICE_URL: https://codexa-intelligence-service.onrender.com
-
-  - type: pserv
-    name: codexa-account-service
-    env: docker
-    dockerfilePath: ./Dockerfile
-    buildArgs:
-      SERVICE_NAME: account-service
-    envVars:
-      SPRING_PROFILES_ACTIVE: render-free
-      SPRING_DATASOURCE_URL: ${codexa-postgres.DATABASE_URL}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      JWT_SECRET: ${JWT_SECRET}
-
-  - type: pserv
-    name: codexa-intelligence-service
-    env: docker
-    dockerfilePath: ./Dockerfile
-    buildArgs:
-      SERVICE_NAME: intelligence-service
-    envVars:
-      SPRING_PROFILES_ACTIVE: render-free
-      SPRING_DATASOURCE_URL: ${codexa-postgres.DATABASE_URL}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-
   - type: web
     name: codexa-frontend
     env: static
     buildCommand: cd codexa-frontend && npm install && npm run build
     publishPath: codexa-frontend/dist
+
+  - type: pserv
+    name: codexa-api-gateway
+    env: docker
+    dockerfilePath: ./Dockerfile
     envVars:
-      VITE_API_URL: https://codexa-api-gateway.onrender.com
+      SERVICE_NAME: api-gateway
+
+  - type: pserv
+    name: codexa-account-service
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      SERVICE_NAME: account-service
+      DATABASE_URL: ${codexa-postgres.DATABASE_URL}
+
+  - type: pserv
+    name: codexa-intelligence-service
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      SERVICE_NAME: intelligence-service
+      DATABASE_URL: ${codexa-postgres.DATABASE_URL}
