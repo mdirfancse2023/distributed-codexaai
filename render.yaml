@@ -1,9 +1,9 @@
 services:
   - type: web
     name: frontend-sgad
-    env: static
+    runtime: node
     buildCommand: cd codexa-frontend && npm install && npm run build
-    publishPath: codexa-frontend/dist
+    startCommand: npx serve -s codexa-frontend/dist -l $PORT
 
   - type: pserv
     name: api-gateway-sgad
