@@ -4,8 +4,3 @@ services:
     runtime: node
     buildCommand: cd codexa-frontend && npm install && npm run build
     startCommand: npx serve -s codexa-frontend/dist -l $PORT
-
-  - type: pserv
-    name: backend-sgad
-    env: docker
-    dockerfilePath: ./Dockerfile
