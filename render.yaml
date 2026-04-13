@@ -5,10 +5,7 @@ services:
   postgres:
     type: postgres
     name: codexa-postgres
-    ipAllowList: [] # Allow all internal connections
     databaseName: codexa
-    user: user
-    plan: free
 
   # API Gateway (using single Dockerfile with build arg)
   api-gateway:
