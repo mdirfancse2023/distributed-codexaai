@@ -17,4 +17,10 @@ services:
         fromDatabase:
           name: mental-health-db
           property: connectionString
+      - key: SPRING_CLOUD_CONFIG_ENABLED
+        value: "false"
+      - key: SPRING_CLOUD_DISCOVERY_ENABLED
+        value: "false"
+      - key: EUREKA_CLIENT_ENABLED
+        value: "false"
     plan: free
