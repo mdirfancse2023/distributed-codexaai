@@ -1,32 +1,35 @@
 databases:
-  - name: codexa-postgres
+  - name: postgres
     databaseName: codexa
 
 services:
   - type: web
-    name: codexa-frontend
+    name: frontend
     env: static
     buildCommand: cd codexa-frontend && npm install && npm run build
 
   - type: pserv
-    name: codexa-api-gateway
+    name: api-gateway
     env: docker
     dockerfilePath: ./Dockerfile
-    envVars:
-      SERVICE_NAME: api-gateway
 
   - type: pserv
-    name: codexa-account-service
+    name: account-service
     env: docker
     dockerfilePath: ./Dockerfile
     envVars:
-      SERVICE_NAME: account-service
-      DATABASE_URL: ${codexa-postgres.DATABASE_URL}
+      DATABASE_URL: ${postgres.DATABASE_URL}
 
   - type: pserv
-    name: codexa-intelligence-service
+    name: workspace-service
     env: docker
     dockerfilePath: ./Dockerfile
     envVars:
-      SERVICE_NAME: intelligence-service
-      DATABASE_URL: ${codexa-postgres.DATABASE_URL}
+      DATABASE_URL: ${postgres.DATABASE_URL}
+
+  - type: pserv
+    name: intelligence-service
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      DATABASE_URL: ${postgres.DATABASE_URL}
