@@ -12,14 +12,14 @@ WORKDIR /app
 # Build common-library first
 COPY common-library/src ./common-library/src
 COPY common-library/pom.xml ./common-library/pom.xml
-RUN cd common-library && mvn clean install -DskipTests
+RUN cd common-library && mvn clean install -DskipTests -Djib.skip=true
 
 # Copy account-service source code
 COPY account-service/src ./src
 COPY account-service/pom.xml ./
 
 # Build account-service (now can find common-library)
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -Djib.skip=true
 
 # Runtime stage
 FROM eclipse-temurin:21-jre
