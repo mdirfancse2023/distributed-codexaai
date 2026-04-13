@@ -18,18 +18,18 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile
     envVars:
-      DATABASE_URL: ${postgres.DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL}
 
   - type: pserv
     name: workspace-service
     env: docker
     dockerfilePath: ./Dockerfile
     envVars:
-      DATABASE_URL: ${postgres.DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL}
 
   - type: pserv
     name: intelligence-service
     env: docker
     dockerfilePath: ./Dockerfile
     envVars:
-      DATABASE_URL: ${postgres.DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL}
