@@ -1,12 +1,11 @@
 # Render Free Tier Deployment Configuration for Codexa AI Microservices
 
-services:
-  # PostgreSQL Free Database (Render provides free PostgreSQL)
-  postgres:
-    type: postgres
-    name: codexa-postgres
+databases:
+  - name: codexa-postgres
     databaseName: codexa
+    user: codexa-postgres
 
+services:
   # API Gateway (using single Dockerfile with build arg)
   api-gateway:
     type: pserv
@@ -45,9 +44,7 @@ services:
       - key: SPRING_PROFILES_ACTIVE
         value: render-free
       - key: SPRING_DATASOURCE_URL
-        value: postgresql://codexa-postgres:5432/codexa
-      - key: SPRING_DATASOURCE_USERNAME
-        value: codexa-postgres
+        value: ${codexa-postgres.DATABASE_URL}
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: update
       - key: JWT_SECRET
@@ -72,9 +69,7 @@ services:
       - key: SPRING_PROFILES_ACTIVE
         value: render-free
       - key: SPRING_DATASOURCE_URL
-        value: postgresql://codexa-postgres:5432/codexa
-      - key: SPRING_DATASOURCE_USERNAME
-        value: codexa-postgres
+        value: ${codexa-postgres.DATABASE_URL}
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: update
       - key: OPENAI_API_KEY
