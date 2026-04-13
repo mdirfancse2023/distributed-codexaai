@@ -17,6 +17,10 @@ services:
         sync: false
       - key: GIT_PASSWORD
         sync: false
+      - key: EUREKA_CLIENT_ENABLED
+        value: "false"
+      - key: SPRING_CLOUD_DISCOVERY_ENABLED
+        value: "false"
     plan: free
 
   - type: web
