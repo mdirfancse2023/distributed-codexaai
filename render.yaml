@@ -1,100 +1,47 @@
-# Render Free Tier Deployment Configuration for Codexa AI Microservices
-
 databases:
   - name: codexa-postgres
     databaseName: codexa
-    user: codexa-postgres
 
 services:
-  # API Gateway (using single Dockerfile with build arg)
-  api-gateway:
-    type: pserv
+  - type: pserv
     name: codexa-api-gateway
     env: docker
     dockerfilePath: ./Dockerfile
     buildArgs:
-      - key: SERVICE_NAME
-        value: api-gateway
+      SERVICE_NAME: api-gateway
     envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: render-free
-      - key: ACCOUNT_SERVICE_URL
-        value: https://codexa-account-service.onrender.com
-      - key: INTELLIGENCE_SERVICE_URL
-        value: https://codexa-intelligence-service.onrender.com
-    healthCheck:
-      path: /actuator/health
-      initialDelaySeconds: 60
-      periodSeconds: 10
+      SPRING_PROFILES_ACTIVE: render-free
+      ACCOUNT_SERVICE_URL: https://codexa-account-service.onrender.com
+      INTELLIGENCE_SERVICE_URL: https://codexa-intelligence-service.onrender.com
 
-  # Account Service
-  account-service:
-    type: pserv
+  - type: pserv
     name: codexa-account-service
     env: docker
     dockerfilePath: ./Dockerfile
     buildArgs:
-      - key: SERVICE_NAME
-        value: account-service
+      SERVICE_NAME: account-service
     envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: render-free
-      - key: SPRING_DATASOURCE_URL
-        value: ${codexa-postgres.DATABASE_URL}
-      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
-        value: update
-      - key: JWT_SECRET
-        value: ${JWT_SECRET}
-    healthCheck:
-      path: /actuator/health
-      initialDelaySeconds: 60
-      periodSeconds: 10
+      SPRING_PROFILES_ACTIVE: render-free
+      SPRING_DATASOURCE_URL: ${codexa-postgres.DATABASE_URL}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: ${JWT_SECRET}
 
-  # Intelligence Service
-  intelligence-service:
-    type: pserv
+  - type: pserv
     name: codexa-intelligence-service
     env: docker
     dockerfilePath: ./Dockerfile
     buildArgs:
-      - key: SERVICE_NAME
-        value: intelligence-service
+      SERVICE_NAME: intelligence-service
     envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: render-free
-      - key: SPRING_DATASOURCE_URL
-        value: ${codexa-postgres.DATABASE_URL}
-      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
-        value: update
-      - key: OPENAI_API_KEY
-        value: ${OPENAI_API_KEY}
-    healthCheck:
-      path: /actuator/health
-      initialDelaySeconds: 60
-      periodSeconds: 10
+      SPRING_PROFILES_ACTIVE: render-free
+      SPRING_DATASOURCE_URL: ${codexa-postgres.DATABASE_URL}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
 
-  # Frontend (React)
-  frontend:
-    type: web
+  - type: web
     name: codexa-frontend
     env: static
     buildCommand: cd codexa-frontend && npm install && npm run build
     publishPath: codexa-frontend/dist
     envVars:
-      - key: VITE_API_URL
-        value: https://codexa-api-gateway.onrender.com
-    headers:
-      - path: /*
-        name: X-Frame-Options
-        value: DENY
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: X-XSS-Protection
-        value: 1; mode=block
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-
+      VITE_API_URL: https://codexa-api-gateway.onrender.com
