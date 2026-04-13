@@ -11,6 +11,6 @@ services:
     dockerfilePath: ./Dockerfile
 
   - type: pserv
-    name: merged-backend-sgad
+    name: backend-sgad
     env: docker
     dockerfilePath: ./Dockerfile
