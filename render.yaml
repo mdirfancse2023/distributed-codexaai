@@ -7,7 +7,6 @@ services:
     name: codexa-frontend
     env: static
     buildCommand: cd codexa-frontend && npm install && npm run build
-    publishPath: codexa-frontend/dist
 
   - type: pserv
     name: codexa-api-gateway
