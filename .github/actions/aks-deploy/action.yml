@@ -22,3 +22,4 @@ runs:
       with:
         resource-group: ${{ inputs.resource-group }}
         cluster-name: ${{ inputs.cluster-name }}
+        admin: true
