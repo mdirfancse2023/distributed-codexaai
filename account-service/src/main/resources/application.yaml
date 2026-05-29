@@ -1,6 +1,7 @@
 spring:
   application:
     name: account-service
+  # Trigger CI/CD redeployment for Azure migration
 
   config:
     import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}
