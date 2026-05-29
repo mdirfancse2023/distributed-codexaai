@@ -67,6 +67,9 @@ docker-compose.override.yml
 ############################
 kubeconfig
 *.kubeconfig
+.k8s-rendered/
+.k8s-gke-rendered/
+k8s/infra/domains.env
 
 ############################
 # Temporary files

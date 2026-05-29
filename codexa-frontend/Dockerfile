@@ -4,8 +4,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+ARG VITE_API_URL=https://api.example.com
 ARG VITE_UNSPLASH_ACCESS_KEY=""
-ENV VITE_API_URL=https://api.34.10.18.19.sslip.io
+ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_UNSPLASH_ACCESS_KEY=${VITE_UNSPLASH_ACCESS_KEY}
 RUN npm run build
 
