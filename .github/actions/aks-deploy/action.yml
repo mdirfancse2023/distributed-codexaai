@@ -24,11 +24,24 @@ runs:
       run: |
         az aks install-cli 2>/dev/null || true
 
+    - name: Debug — show account context
+      shell: bash
+      run: |
+        echo "=== Current Azure context ==="
+        az account show -o table
+        echo ""
+        echo "=== AKS clusters in RG ==="
+        az aks list --resource-group ${{ inputs.resource-group }} --query '[].{name:name,state:provisioningState}' -o table || echo "Cannot list AKS clusters"
+        echo ""
+        echo "=== Role assignments for current identity ==="
+        az role assignment list --assignee $(az account show --query user.name -o tsv) --all --query '[].{role:roleDefinitionName,scope:scope}' -o table || echo "Cannot list roles"
+
     - name: Set AKS context
       shell: bash
       run: |
         az aks get-credentials \
           --resource-group ${{ inputs.resource-group }} \
           --name ${{ inputs.cluster-name }} \
+          --subscription ${{ env.AZURE_SUBSCRIPTION_ID }} \
           --overwrite-existing \
           --admin
