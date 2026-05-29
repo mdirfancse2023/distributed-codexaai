@@ -10,4 +10,3 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - ${CODEXA_APP_HOST}
-    - ${CODEXA_API_HOST}

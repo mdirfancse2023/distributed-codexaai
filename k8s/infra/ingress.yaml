@@ -7,13 +7,11 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: "nginx"
   tls:
     - hosts:
         - "${CODEXA_APP_HOST}"
-        - "${CODEXA_API_HOST}"
       secretName: codexa-tls-secret
   rules:
     # 1. Main Website Route
