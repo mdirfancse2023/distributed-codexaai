@@ -1,4 +1,4 @@
-name: Deploy Codexa Frontend
+name: Deploy Codexa Frontend (GKE)
 
 on:
   push:
@@ -6,15 +6,21 @@ on:
       - main
     paths:
       - 'codexa-frontend/**'
+  workflow_dispatch:
 
 env:
   SERVICE_NAME: codexa-frontend
   IMAGE_NAME: mdirfancse2023/codexa-frontend
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-deploy:
-    name: Build, Push, and Deploy to AKS
+    name: Build, Push, and Deploy to GKE
     runs-on: ubuntu-latest
+    if: vars.ENABLE_GKE_DEPLOY == 'true'
 
     steps:
       - name: Checkout Code
@@ -42,15 +48,15 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:latest
 
-      - name: Connect to AKS
-        uses: ./.github/actions/aks-deploy
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Connect to GKE
+        uses: ./.github/actions/gke-deploy
         with:
-          resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          cluster-name: ${{ secrets.AZURE_AKS_CLUSTER }}
+          workload-identity-provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service-account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          cluster-name: ${{ secrets.GCP_CLUSTER }}
+          location: ${{ secrets.GCP_ZONE }}
 
-      - name: Deploy to AKS
+      - name: Deploy to GKE
         run: |
           kubectl set image deployment/${{ env.SERVICE_NAME }} \
             ${{ env.SERVICE_NAME }}=${{ env.IMAGE_NAME }}:${{ github.sha }} \

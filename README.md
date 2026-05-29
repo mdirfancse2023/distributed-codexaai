@@ -212,38 +212,40 @@ npm run dev
 
 ## ☸️ Kubernetes Deployment
 
-### Connect to cluster
-gcloud container clusters get-credentials lovable-me-cluster --region asia-south1  
+Shared `k8s/` manifests deploy to **Azure AKS** or **Google GKE** (or both).
 
-### Create namespaces
-kubectl create namespace lovable-core  
-kubectl create namespace lovable-previews  
+| Cloud | Guide | Workflows | Bootstrap |
+|-------|--------|-----------|-----------|
+| **Azure AKS** | [DEPLOYMENT.md](DEPLOYMENT.md) | `.github/workflows/` | `Bootstrap AKS Cluster` |
+| **Google GKE** | [DEPLOYMENT-GKE.md](DEPLOYMENT-GKE.md) | `.github/workflows/gke/` | `Bootstrap GKE Cluster` |
 
-### Apply configs
-kubectl create secret generic app-secrets --from-env-file=.env  
-kubectl apply -f k8s/configmaps/  
+Enable GKE deploys: set repository variable `ENABLE_GKE_DEPLOY=true`.
 
-### Deploy databases
-kubectl apply -f k8s/databases/  
+### Quick start (AKS)
 
-### Deploy services
-kubectl apply -f k8s/services/  
+1. Create an AKS cluster and configure [GitHub secrets](DEPLOYMENT.md#2-github-repository-secrets).
+2. Run **Bootstrap AKS Cluster** (Actions tab).
+3. Push to `main` — workflows build to **Docker Hub** and roll out pods.
 
-### Setup ingress
-kubectl apply -f k8s/ingress.yaml  
+### Layout
+
+```
+k8s/infra/      namespaces, ingress, TLS, network policies
+k8s/services/   microservice Deployments
+k8s/stateful/   PostgreSQL, MinIO, Redis, Kafka
+k8s/proxy/      live preview routing
+```
+
+See [k8s/README.md](k8s/README.md) for cloud-specific storage/ingress notes.
 
 ---
 
 ## 🔄 CI/CD Pipeline
 
-- GitHub Actions
-- OIDC authentication (no static keys)
-- Docker images built using Jib
-- Kubernetes rolling updates
-
-Example:
-
-kubectl set image deployment/account-service account-service=image:tag  
+- **GitHub Actions** → **Docker Hub** → **AKS** and/or **GKE**
+- Java services: Jib image builds
+- Frontend & proxy: Docker build-push
+- Infrastructure workflows for Postgres / MinIO / Redis / Kafka
 
 ---
 
@@ -261,7 +263,8 @@ kubectl set image deployment/account-service account-service=image:tag
 
 ### Infrastructure
 - Docker
-- Kubernetes (GKE)
+- Kubernetes (Azure AKS / Google GKE)
+- GitHub Actions CI/CD
 
 ### Messaging
 - Kafka
@@ -308,144 +311,6 @@ If you like this project:
 - Star the repo  
 - Fork it  
 - Share it  
-
----
-
-## Render Free Tier Deployment
-
-### Prerequisites
-- Render account (free tier - no credit card required)
-- GitHub repository connected to Render
-- Basic environment variables configured
-
-### Quick Start (Free Tier)
-
-1. **Connect Repository**
-   ```bash
-   # Push your code to GitHub if not already done
-   git add .
-   git commit -m "Add Render free tier deployment configuration"
-   git push origin main
-   ```
-
-2. **Create Render Environment Variables (Free Tier)**
-   - `DATABASE_URL` - PostgreSQL connection URL (provided by Render)
-   - `JWT_SECRET` - JWT signing secret (any random string)
-   - `OPENAI_API_KEY` - OpenAI API key (optional, for AI features)
-
-3. **Deploy to Render (Free)**
-   - Go to [Render Dashboard](https://dashboard.render.com)
-   - Sign up for free account (no credit card needed)
-   - Click "New" -> "Blueprint"
-   - Connect your GitHub repository
-   - Render will automatically detect `render.yaml`
-   - Configure the 3 environment variables above
-   - Click "Apply"
-
-### Free Tier Limitations
-
-**What's Included Free:**
-- 3 Private Services (microservices)
-- 1 Web Service (frontend)
-- 1 PostgreSQL Database (up to 256MB)
-- 750 hours build time per month
-- SSL certificates
-- Custom domains
-
-**What's Removed for Free Tier:**
-- Redis cache (using in-memory caching instead)
-- MinIO storage (using database for file storage)
-- Kafka messaging (using direct API calls)
-- Eureka service discovery (using direct URLs)
-- Stripe integration (billing features disabled)
-
-### Services Deployed (Free Tier)
-
-#### Infrastructure
-- **PostgreSQL** - Free Render PostgreSQL database
-
-#### Microservices (3 of 6 for free tier)
-- **API Gateway** - Request routing and load balancing
-- **Account Service** - Authentication and user management
-- **Intelligence Service** - AI processing (if OpenAI key provided)
-
-#### Frontend
-- **React App** - User interface with SPA routing
-
-### Environment Configuration
-
-#### Free Tier Setup
-- Direct service-to-service communication
-- Database-based file storage
-- In-memory caching
-- Simplified configuration management
-
-### Service URLs (Free Tier)
-
-After deployment, services will be available at:
-- Frontend: `https://codexa-frontend.onrender.com`
-- API Gateway: `https://codexa-api-gateway.onrender.com`
-- Account Service: `https://codexa-account-service.onrender.com`
-- Intelligence Service: `https://codexa-intelligence-service.onrender.com` (if deployed)
-
-### Monitoring and Logs
-
-- **Health Checks**: All services include `/actuator/health` endpoints
-- **Logs**: Available in Render dashboard
-- **Metrics**: Spring Boot Actuator endpoints
-- **Alerts**: Configure in Render dashboard
-
-### Scaling (Free Tier)
-
-Free tier limitations:
-- **Fixed Resources**: No automatic scaling on free tier
-- **Manual Upgrade**: Upgrade to paid plans for scaling
-- **Resource Limits**: 512MB RAM per service
-
-### Troubleshooting (Free Tier)
-
-#### Common Issues
-1. **Database Connection**: Check `DATABASE_URL` environment variable
-2. **Service Limits**: Free tier allows only 3 private services
-3. **Build Time**: Limited to 750 hours per month
-4. **Memory Issues**: Services limited to 512MB RAM
-
-#### Debug Commands
-```bash
-# Check service logs
-# Use Render dashboard to view logs
-
-# Test health endpoints
-curl https://codexa-api-gateway.onrender.com/actuator/health
-
-# Test database connection
-# Check DATABASE_URL format in Render dashboard
-```
-
-### Free Tier Benefits
-
-- **No Credit Card Required**: Start completely free
-- **Full Features**: Core functionality available
-- **SSL Certificates**: Automatic HTTPS
-- **Custom Domains**: Connect your domain
-- **Always On**: Services stay running (with limits)
-
-### When to Upgrade
-
-Consider upgrading when:
-- Need more than 3 microservices
-- Require Redis caching
-- Need file storage (MinIO)
-- Want Kafka messaging
-- Need higher memory/CPU
-- Require zero-downtime deployments
-
-### Security
-
-- Environment variables for sensitive data
-- SSL/TLS automatically configured
-- Network isolation for private services
-- Regular security updates
 
 ---
 

@@ -1,0 +1,76 @@
+# k8s/infra/rbac.yaml
+# RBAC for workspace-service to manage preview pods in codexa-previews namespace.
+# The ServiceAccount, Role, and RoleBinding are defined here (infra) so they
+# are applied during bootstrap before workspace-service.yaml is deployed.
+
+---
+# ServiceAccount used by workspace-service pods
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: workspace-service-account
+  namespace: codexa-ai
+
+---
+# Role in codexa-previews: full pod lifecycle management (Fabric8 Kubernetes client)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: preview-manager-role
+  namespace: codexa-previews
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/exec
+      - pods/log
+      - pods/status
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources:
+      - configmaps
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# Bind the ServiceAccount (codexa-ai) to the Role (codexa-previews)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: preview-manager-binding
+  namespace: codexa-previews
+subjects:
+  - kind: ServiceAccount
+    name: workspace-service-account
+    namespace: codexa-ai
+roleRef:
+  kind: Role
+  name: preview-manager-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Role in codexa-previews: allow runner-pool syncer to read secrets (MinIO creds)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: runner-secret-reader
+  namespace: codexa-previews
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+
+---
+# Bind runner pods to the secret-reader role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: runner-secret-reader-binding
+  namespace: codexa-previews
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: codexa-previews
+roleRef:
+  kind: Role
+  name: runner-secret-reader
+  apiGroup: rbac.authorization.k8s.io

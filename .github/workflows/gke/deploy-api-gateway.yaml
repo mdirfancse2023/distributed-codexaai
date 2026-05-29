@@ -1,4 +1,4 @@
-name: Deploy API Gateway Service
+name: Deploy API Gateway (GKE)
 
 on:
   push:
@@ -6,15 +6,21 @@ on:
       - main
     paths:
       - 'api-gateway/**'
+  workflow_dispatch:
 
 env:
   SERVICE_NAME: api-gateway
   IMAGE_NAME: mdirfancse2023/codexa-ai-api-gateway
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-deploy:
-    name: Build, Push, and Deploy to AKS
+    name: Build, Push, and Deploy to GKE
     runs-on: ubuntu-latest
+    if: vars.ENABLE_GKE_DEPLOY == 'true'
 
     steps:
       - name: Checkout Code
@@ -36,15 +42,15 @@ jobs:
             -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} \
             -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Connect to AKS
-        uses: ./.github/actions/aks-deploy
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Connect to GKE
+        uses: ./.github/actions/gke-deploy
         with:
-          resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          cluster-name: ${{ secrets.AZURE_AKS_CLUSTER }}
+          workload-identity-provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service-account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          cluster-name: ${{ secrets.GCP_CLUSTER }}
+          location: ${{ secrets.GCP_ZONE }}
 
-      - name: Deploy to AKS
+      - name: Deploy to GKE
         run: |
           kubectl set image deployment/${{ env.SERVICE_NAME }} \
             ${{ env.SERVICE_NAME }}=${{ env.IMAGE_NAME }}:${{ github.sha }} \

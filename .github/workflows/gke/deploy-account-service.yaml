@@ -1,20 +1,28 @@
-name: Deploy API Gateway Service
+name: Deploy Account Service (GKE)
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'api-gateway/**'
+      - 'account-service/**'
+      - 'common-library/**'
+  workflow_dispatch:
 
 env:
-  SERVICE_NAME: api-gateway
-  IMAGE_NAME: mdirfancse2023/codexa-ai-api-gateway
+  SERVICE_NAME: account-service
+  IMAGE_NAME: mdirfancse2023/codexa-ai-account-service
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   build-and-deploy:
-    name: Build, Push, and Deploy to AKS
+    name: Build, Push, and Deploy to GKE
     runs-on: ubuntu-latest
+    # Enable by setting repository variable ENABLE_GKE_DEPLOY=true
+    if: vars.ENABLE_GKE_DEPLOY == 'true'
 
     steps:
       - name: Checkout Code
@@ -27,6 +35,10 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Build and Install Common Library
+        working-directory: ./common-library
+        run: ./mvnw clean install -DskipTests
+
       - name: Build and Push Docker Image with Jib
         working-directory: ./${{ env.SERVICE_NAME }}
         run: |
@@ -36,15 +48,15 @@ jobs:
             -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} \
             -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Connect to AKS
-        uses: ./.github/actions/aks-deploy
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Connect to GKE
+        uses: ./.github/actions/gke-deploy
         with:
-          resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          cluster-name: ${{ secrets.AZURE_AKS_CLUSTER }}
+          workload-identity-provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service-account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          cluster-name: ${{ secrets.GCP_CLUSTER }}
+          location: ${{ secrets.GCP_ZONE }}
 
-      - name: Deploy to AKS
+      - name: Deploy to GKE
         run: |
           kubectl set image deployment/${{ env.SERVICE_NAME }} \
             ${{ env.SERVICE_NAME }}=${{ env.IMAGE_NAME }}:${{ github.sha }} \

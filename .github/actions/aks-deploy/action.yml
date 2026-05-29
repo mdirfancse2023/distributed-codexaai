@@ -1,0 +1,24 @@
+name: Deploy to AKS
+description: Authenticate to Azure and configure kubectl for AKS
+
+inputs:
+  resource-group:
+    description: Azure resource group containing the AKS cluster
+    required: true
+  cluster-name:
+    description: AKS cluster name
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Azure login
+      uses: azure/login@v2
+      with:
+        creds: ${{ env.AZURE_CREDENTIALS }}
+
+    - name: Set AKS context
+      uses: azure/aks-set-context@v4
+      with:
+        resource-group: ${{ inputs.resource-group }}
+        cluster-name: ${{ inputs.cluster-name }}

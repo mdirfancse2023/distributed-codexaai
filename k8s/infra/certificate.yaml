@@ -9,5 +9,5 @@ spec:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-    - codexa.34.10.18.19.sslip.io
-    - api.34.10.18.19.sslip.io
+    - ${CODEXA_APP_HOST}
+    - ${CODEXA_API_HOST}

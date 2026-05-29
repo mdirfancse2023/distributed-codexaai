@@ -1,0 +1,52 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'k8s/stateful/**'
+      - 'k8s/infra/core-network-policies.yaml'
+      - 'k8s/infra/preview-network-policies.yaml'
+      - 'k8s/infra/runner-pool.yaml'
+      - 'k8s/infra/rbac.yaml'
+  workflow_dispatch:
+
+jobs:
+  deploy-infra:
+    name: Apply PostgreSQL, MinIO, Redis, Kafka to AKS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Connect to AKS
+        uses: ./.github/actions/aks-deploy
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        with:
+          resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AZURE_AKS_CLUSTER }}
+
+      - name: Apply RBAC
+        run: kubectl apply -f k8s/infra/rbac.yaml
+
+      - name: Apply stateful infrastructure
+        run: |
+          kubectl apply -f k8s/stateful/pgvector.yaml
+          kubectl apply -f k8s/stateful/minio.yaml
+          kubectl apply -f k8s/stateful/redis.yaml
+          kubectl apply -f k8s/stateful/kafka.yaml
+
+      - name: Apply network policies and preview runners
+        run: |
+          kubectl apply -f k8s/infra/core-network-policies.yaml
+          kubectl apply -f k8s/infra/preview-network-policies.yaml
+          kubectl apply -f k8s/infra/runner-pool.yaml
+
+      - name: Wait for PostgreSQL
+        run: kubectl rollout status statefulset/pgvector -n codexa-ai --timeout=300s
+
+      - name: Wait for MinIO
+        run: kubectl rollout status statefulset/minio -n codexa-ai --timeout=300s

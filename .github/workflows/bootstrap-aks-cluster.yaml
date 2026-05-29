@@ -1,0 +1,117 @@
+name: Bootstrap AKS Cluster
+
+# One-time (or rare) setup: ingress controller, cert-manager, secrets, all k8s manifests.
+on:
+  workflow_dispatch:
+
+jobs:
+  bootstrap:
+    name: Initial AKS cluster setup for Codexa AI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Connect to AKS
+        uses: ./.github/actions/aks-deploy
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+        with:
+          resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AZURE_AKS_CLUSTER }}
+
+      - name: Install NGINX Ingress Controller
+        run: |
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo update
+          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+            --namespace ingress-nginx --create-namespace \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-health-probe-request-path"=/healthz
+
+      - name: Install cert-manager
+        run: |
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+          kubectl wait --for=condition=Available deployment/cert-manager -n cert-manager --timeout=180s
+          kubectl wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=180s
+
+      - name: Apply ClusterIssuer
+        run: kubectl apply -f k8s/infra/issuer.yaml
+
+      - name: Create app-secrets from GitHub secrets
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          ACCOUNT_DB_PASSWORD: ${{ secrets.ACCOUNT_DB_PASSWORD }}
+          WORKSPACE_DB_PASSWORD: ${{ secrets.WORKSPACE_DB_PASSWORD }}
+          INTELLIGENCE_DB_PASSWORD: ${{ secrets.INTELLIGENCE_DB_PASSWORD }}
+          MINIO_ROOT_USER: ${{ secrets.MINIO_ROOT_USER }}
+          MINIO_ROOT_PASSWORD: ${{ secrets.MINIO_ROOT_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          GIT_USERNAME: ${{ secrets.GIT_USERNAME }}
+          GIT_PASSWORD: ${{ secrets.GIT_PASSWORD }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+        run: |
+          kubectl create namespace codexa-ai --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace codexa-previews --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic app-secrets -n codexa-ai \
+            --from-literal=POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            --from-literal=ACCOUNT_DB_PASSWORD="$ACCOUNT_DB_PASSWORD" \
+            --from-literal=WORKSPACE_DB_PASSWORD="$WORKSPACE_DB_PASSWORD" \
+            --from-literal=INTELLIGENCE_DB_PASSWORD="$INTELLIGENCE_DB_PASSWORD" \
+            --from-literal=MINIO_ROOT_USER="$MINIO_ROOT_USER" \
+            --from-literal=MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD" \
+            --from-literal=JWT_SECRET="$JWT_SECRET" \
+            --from-literal=STRIPE_API_KEY="$STRIPE_API_KEY" \
+            --from-literal=STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" \
+            --from-literal=GIT_USERNAME="$GIT_USERNAME" \
+            --from-literal=GIT_PASSWORD="$GIT_PASSWORD" \
+            --from-literal=AI_API_KEY="$AI_API_KEY" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Render and apply domain manifests
+        env:
+          CODEXA_APP_HOST: ${{ secrets.CODEXA_APP_HOST }}
+          CODEXA_API_HOST: ${{ secrets.CODEXA_API_HOST }}
+          CODEXA_PREVIEW_DOMAIN: ${{ secrets.CODEXA_PREVIEW_DOMAIN }}
+        run: |
+          ./scripts/configure-domains.sh
+          kubectl apply -f .k8s-rendered/infra/namespaces.yaml
+          kubectl apply -f .k8s-rendered/infra/ingress.yaml
+          kubectl apply -f .k8s-rendered/infra/certificate.yaml
+
+      - name: Apply RBAC
+        run: kubectl apply -f k8s/infra/rbac.yaml
+
+      - name: Deploy infrastructure
+        run: |
+          kubectl apply -f k8s/stateful/pgvector.yaml
+          kubectl apply -f k8s/stateful/minio.yaml
+          kubectl apply -f k8s/stateful/redis.yaml
+          kubectl apply -f k8s/stateful/kafka.yaml
+          kubectl apply -f k8s/infra/core-network-policies.yaml
+          kubectl apply -f k8s/infra/preview-network-policies.yaml
+          kubectl apply -f k8s/infra/runner-pool.yaml
+
+      - name: Wait for config-service before deploying other services
+        run: |
+          kubectl apply -f k8s/services/config-service.yaml
+          kubectl rollout status deployment/config-service -n codexa-ai --timeout=300s
+
+      - name: Deploy all microservices
+        run: |
+          kubectl apply -f k8s/services/account-service.yaml
+          kubectl apply -f k8s/services/workspace-service.yaml
+          kubectl apply -f k8s/services/intelligence-service.yaml
+          kubectl apply -f k8s/services/api-gateway.yaml
+          kubectl apply -f k8s/services/frontend.yaml
+
+      - name: Deploy preview proxy
+        run: kubectl apply -f k8s/proxy/proxy-deployment.yaml
+
+      - name: Print ingress IP
+        run: |
+          echo "Waiting for LoadBalancer IP..."
+          kubectl get svc -n ingress-nginx ingress-nginx-controller \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}' && echo

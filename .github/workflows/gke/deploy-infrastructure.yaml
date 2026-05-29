@@ -1,0 +1,56 @@
+name: Deploy Infrastructure (GKE)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'k8s/stateful/**'
+      - 'k8s/infra/core-network-policies.yaml'
+      - 'k8s/infra/preview-network-policies.yaml'
+      - 'k8s/infra/runner-pool.yaml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-infra:
+    name: Apply PostgreSQL, MinIO, Redis, Kafka to GKE
+    runs-on: ubuntu-latest
+    if: vars.ENABLE_GKE_DEPLOY == 'true'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Connect to GKE
+        uses: ./.github/actions/gke-deploy
+        with:
+          workload-identity-provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service-account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          cluster-name: ${{ secrets.GCP_CLUSTER }}
+          location: ${{ secrets.GCP_ZONE }}
+
+      - name: Prepare GKE stateful manifests
+        run: ./scripts/prepare-gke-manifests.sh
+
+      - name: Apply stateful infrastructure
+        run: |
+          kubectl apply -f .k8s-gke-rendered/stateful/pgvector.yaml
+          kubectl apply -f .k8s-gke-rendered/stateful/minio.yaml
+          kubectl apply -f .k8s-gke-rendered/stateful/redis.yaml
+          kubectl apply -f .k8s-gke-rendered/stateful/kafka.yaml
+
+      - name: Apply network policies and preview runners
+        run: |
+          kubectl apply -f k8s/infra/core-network-policies.yaml
+          kubectl apply -f k8s/infra/preview-network-policies.yaml
+          kubectl apply -f k8s/infra/runner-pool.yaml
+
+      - name: Wait for PostgreSQL
+        run: kubectl rollout status statefulset/pgvector -n codexa-ai --timeout=300s
+
+      - name: Wait for MinIO
+        run: kubectl rollout status statefulset/minio -n codexa-ai --timeout=300s

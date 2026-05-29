@@ -11,13 +11,9 @@ env:
   SERVICE_NAME: config-service
   IMAGE_NAME: mdirfancse2023/codexa-ai-config-service
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   build-and-deploy:
-    name: Build, Push, and Deploy to GKE
+    name: Build, Push, and Deploy to AKS
     runs-on: ubuntu-latest
 
     steps:
@@ -40,23 +36,17 @@ jobs:
             -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} \
             -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+      - name: Connect to AKS
+        uses: ./.github/actions/aks-deploy
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
         with:
-          workload_identity_provider: '${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}'
-          service_account: '${{ secrets.GCP_SERVICE_ACCOUNT }}'
+          resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AZURE_AKS_CLUSTER }}
 
-      - name: Get GKE Credentials
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          cluster_name: ${{ secrets.GCP_CLUSTER }}
-          location: ${{ secrets.GCP_ZONE }}
-
-      - name: Deploy to GKE
+      - name: Deploy to AKS
         run: |
           kubectl set image deployment/${{ env.SERVICE_NAME }} \
-          ${{ env.SERVICE_NAME }}=${{ env.IMAGE_NAME }}:${{ github.sha }} \
-          -n codexa-ai
-          
+            ${{ env.SERVICE_NAME }}=${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -n codexa-ai
           kubectl rollout status deployment/${{ env.SERVICE_NAME }} -n codexa-ai
-          

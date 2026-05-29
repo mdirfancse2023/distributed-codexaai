@@ -1,40 +1,6 @@
-
-# 1. Create a dedicated ServiceAccount in codexa-core
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: workspace-service-account
-  namespace: codexa-ai
-
----
-# 2. Create a Role in codexa-previews with the exact permissions Fabric8 needs
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: preview-manager-role
-  namespace: codexa-previews
-rules:
-  - apiGroups: [""]
-    resources: ["pods", "pods/exec", "pods/log", "pods/status"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
----
-# 3. Bind the ServiceAccount (from codexa-core) to the Role (in codexa-previews)
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: preview-manager-binding
-  namespace: codexa-previews
-subjects:
-  - kind: ServiceAccount
-    name: workspace-service-account
-    namespace: codexa-ai # Note the cross-namespace reference here
-roleRef:
-  kind: Role
-  name: preview-manager-role
-  apiGroup: rbac.authorization.k8s.io
-
----
+# k8s/services/workspace-service.yaml
+# Note: ServiceAccount, Role, and RoleBinding for preview pod management
+# are defined in k8s/infra/rbac.yaml (applied during bootstrap).
 
 apiVersion: apps/v1
 kind: Deployment

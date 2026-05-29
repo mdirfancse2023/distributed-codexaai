@@ -1,4 +1,4 @@
-name: Deploy Preview Routing
+name: Deploy Preview Routing (GKE)
 
 on:
   push:
@@ -9,15 +9,21 @@ on:
       - 'k8s/infra/ingress.yaml'
       - 'k8s/infra/namespaces.yaml'
       - 'k8s/infra/certificate.yaml'
+  workflow_dispatch:
 
 env:
   SERVICE_NAME: codexa-ai-proxy
   IMAGE_NAME: mdirfancse2023/codexa-ai-proxy
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-deploy:
-    name: Build, Push, and Deploy Preview Routing to AKS
+    name: Build, Push, and Deploy Preview Routing to GKE
     runs-on: ubuntu-latest
+    if: vars.ENABLE_GKE_DEPLOY == 'true'
 
     steps:
       - name: Checkout Code
@@ -42,29 +48,29 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:latest
 
-      - name: Connect to AKS
-        uses: ./.github/actions/aks-deploy
-        env:
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Connect to GKE
+        uses: ./.github/actions/gke-deploy
         with:
-          resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          cluster-name: ${{ secrets.AZURE_AKS_CLUSTER }}
+          workload-identity-provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service-account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          cluster-name: ${{ secrets.GCP_CLUSTER }}
+          location: ${{ secrets.GCP_ZONE }}
 
-      - name: Render domain-specific manifests
+      - name: Prepare GKE manifests
         env:
           CODEXA_APP_HOST: ${{ secrets.CODEXA_APP_HOST }}
           CODEXA_API_HOST: ${{ secrets.CODEXA_API_HOST }}
           CODEXA_PREVIEW_DOMAIN: ${{ secrets.CODEXA_PREVIEW_DOMAIN }}
-        run: ./scripts/configure-domains.sh
+        run: ./scripts/prepare-gke-manifests.sh
 
       - name: Apply Preview Routing Manifests
         run: |
-          kubectl apply -f .k8s-rendered/infra/namespaces.yaml
+          kubectl apply -f .k8s-gke-rendered/infra/namespaces.yaml
           kubectl apply -f k8s/proxy/proxy-deployment.yaml
-          kubectl apply -f .k8s-rendered/infra/ingress.yaml
-          kubectl apply -f .k8s-rendered/infra/certificate.yaml
+          kubectl apply -f .k8s-gke-rendered/infra/ingress.yaml
+          kubectl apply -f .k8s-gke-rendered/infra/certificate.yaml
 
-      - name: Deploy Proxy to AKS
+      - name: Deploy Proxy to GKE
         run: |
           kubectl set image deployment/${{ env.SERVICE_NAME }} \
             ${{ env.SERVICE_NAME }}=${{ env.IMAGE_NAME }}:${{ github.sha }} \

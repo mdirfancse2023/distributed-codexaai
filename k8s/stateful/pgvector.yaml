@@ -8,6 +8,9 @@ metadata:
 data:
   init.sh: |
     #!/bin/bash
+    # This script runs as the postgres superuser inside the container.
+    # The env vars ACCOUNT_DB_PASSWORD, WORKSPACE_DB_PASSWORD, INTELLIGENCE_DB_PASSWORD
+    # are injected from the app-secrets Secret (see StatefulSet spec below).
     set -e
 
     psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
@@ -15,9 +18,9 @@ data:
       CREATE DATABASE workspace_db;
       CREATE DATABASE intelligence_db;
 
-      CREATE USER account_user WITH PASSWORD '$ACCOUNT_DB_PASSWORD';
-      CREATE USER workspace_user WITH PASSWORD '$WORKSPACE_DB_PASSWORD';
-      CREATE USER intelligence_user WITH PASSWORD '$INTELLIGENCE_DB_PASSWORD';
+      CREATE USER account_user WITH PASSWORD '${ACCOUNT_DB_PASSWORD}';
+      CREATE USER workspace_user WITH PASSWORD '${WORKSPACE_DB_PASSWORD}';
+      CREATE USER intelligence_user WITH PASSWORD '${INTELLIGENCE_DB_PASSWORD}';
 
       GRANT ALL PRIVILEGES ON DATABASE account_db TO account_user;
       GRANT ALL PRIVILEGES ON DATABASE workspace_db TO workspace_user;
@@ -107,6 +110,7 @@ spec:
         name: pgdata
       spec:
         accessModes: [ReadWriteOnce]
+        storageClassName: managed-csi
         resources:
           requests:
             storage: 10Gi

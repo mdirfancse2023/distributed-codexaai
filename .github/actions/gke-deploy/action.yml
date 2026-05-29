@@ -1,0 +1,31 @@
+name: Deploy to GKE
+description: Authenticate to Google Cloud via OIDC and configure kubectl for GKE
+
+inputs:
+  workload-identity-provider:
+    description: GCP workload identity provider resource name
+    required: true
+  service-account:
+    description: GCP service account email for GitHub OIDC
+    required: true
+  cluster-name:
+    description: GKE cluster name
+    required: true
+  location:
+    description: GKE cluster zone or region
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ inputs.workload-identity-provider }}
+        service_account: ${{ inputs.service-account }}
+
+    - name: Get GKE credentials
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ inputs.cluster-name }}
+        location: ${{ inputs.location }}
