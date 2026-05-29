@@ -41,3 +41,4 @@ stripe:
     secret: ${STRIPE_API_KEY}
   webhook:
     secret: ${STRIPE_WEBHOOK_SECRET}
+
