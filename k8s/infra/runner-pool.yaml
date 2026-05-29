@@ -4,7 +4,7 @@ metadata:
   name: runner-pool
   namespace: codexa-previews
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: runner
@@ -32,7 +32,7 @@ spec:
           resources:
             requests:
               memory: "256Mi"
-              cpu: "20m"
+              cpu: "100m"
             limits:
               memory: "1Gi"
               cpu: "500m"
