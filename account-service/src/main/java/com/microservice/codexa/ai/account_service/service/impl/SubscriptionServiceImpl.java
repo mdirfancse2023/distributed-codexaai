@@ -132,6 +132,14 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     public PlanDto getCurrentSubscribedPlanByUser() {
         Long userId = authUtil.getCurrentUserId();
         SubscriptionResponse subscriptionResponse = getCurrentSubscription();
+        
+        // If user has no active subscription, return free tier plan from database
+        if (subscriptionResponse.plan() == null) {
+            Plan freeTierPlan = planRepository.findById(1L)
+                    .orElseThrow(() -> new ResourceNotFoundException("Plan", "1"));
+            return subscriptionMapper.toPlanResponse(freeTierPlan);
+        }
+        
         return subscriptionResponse.plan();
     }
 
