@@ -24,26 +24,6 @@ runs:
       run: |
         az aks install-cli 2>/dev/null || true
 
-    - name: Debug — show account context
-      shell: bash
-      run: |
-        echo "=== Current Azure context ==="
-        az account show -o table
-        echo ""
-        echo "=== Input diagnostics ==="
-        RG="${{ inputs.resource-group }}"
-        CLUSTER="${{ inputs.cluster-name }}"
-        echo "resource-group length: ${#RG}"
-        echo "cluster-name length: ${#CLUSTER}"
-        echo "resource-group hex dump:"
-        echo -n "$RG" | xxd | head -3
-        echo ""
-        echo "=== All resource groups ==="
-        az group list --query '[].{name:name, location:location}' -o table
-        echo ""
-        echo "=== AKS clusters in RG ==="
-        az aks list --resource-group "$RG" --query '[].{name:name,state:provisioningState}' -o table || echo "Cannot list AKS clusters"
-
     - name: Set AKS context
       shell: bash
       run: |
