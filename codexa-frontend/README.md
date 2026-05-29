@@ -2,6 +2,8 @@
 
 AI‑powered project workspace with real‑time chat, live code updates, file tree navigation, and project collaboration.
 
+**Production URL:** https://codexaai.virtualgyans.tech
+
 ## ✨ Frontend features
 
 - **Project dashboard** with searchable cards and live thumbnails
