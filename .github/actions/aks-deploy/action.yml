@@ -1,5 +1,5 @@
 name: Deploy to AKS
-description: Authenticate to Azure and configure kubectl for AKS
+description: Authenticate to Azure via OIDC and configure kubectl for AKS
 
 inputs:
   resource-group:
@@ -12,10 +12,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Azure login
+    - name: Azure login (OIDC)
       uses: azure/login@v2
       with:
-        creds: ${{ env.AZURE_CREDENTIALS }}
+        client-id: ${{ env.AZURE_CLIENT_ID }}
+        tenant-id: ${{ env.AZURE_TENANT_ID }}
+        subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
     - name: Set AKS context
       shell: bash
