@@ -106,6 +106,34 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
             String startCmd = "npm install && nohup npm run dev -- --host 0.0.0.0 --port 5173 > /app/dev.log 2>&1 &";
             execCommand(podName, "runner", "sh", "-c", startCmd);
 
+            log.info("Waiting for Vite dev server to start on port 5173 inside pod {}...", podName);
+            boolean serverReady = false;
+            for (int i = 0; i < 60; i++) {
+                if (isPortOpen(podName, "runner", 5173)) {
+                    serverReady = true;
+                    log.info("Vite dev server started successfully on port 5173 inside pod {} after {} attempts", podName, i + 1);
+                    break;
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted while waiting for Vite dev server startup", ie);
+                }
+            }
+
+            if (!serverReady) {
+                try {
+                    ByteArrayOutputStream devLogOut = new ByteArrayOutputStream();
+                    client.pods().inNamespace(namespace).withName(podName)
+                            .inContainer("runner")
+                            .writingOutput(devLogOut)
+                            .exec("tail", "-n", "20", "/app/dev.log");
+                    log.error("Vite startup failed. Last 20 lines of dev.log:\n{}", devLogOut.toString());
+                } catch (Exception ignored) {}
+                throw new RuntimeException("Vite dev server failed to start on port 5173 within 60 seconds.");
+            }
+
             Pod updatedPod = client.pods().inNamespace(namespace).withName(podName).get();
             registerRoute(domain, updatedPod);
 
@@ -152,6 +180,33 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         } catch (Exception e) {
             log.error("Exec failed", e);
             throw new RuntimeException("Pod Execution Failed", e);
+        }
+    }
+
+    private boolean isPortOpen(String podName, String container, int port) {
+        CompletableFuture<Integer> exitCodeFuture = new CompletableFuture<>();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+
+        String checkCmd = String.format("node -e \"const net = require('net'); const conn = net.createConnection(%d, 'localhost', () => { conn.end(); process.exit(0); }).on('error', () => process.exit(1));\"", port);
+
+        try (ExecWatch watch = client.pods().inNamespace(namespace).withName(podName)
+                .inContainer(container)
+                .writingOutput(out)
+                .writingError(err)
+                .usingListener(new ExecListener() {
+                    @Override
+                    public void onClose(int code, String reason) {
+                        exitCodeFuture.complete(code);
+                    }
+                })
+                .exec("sh", "-c", checkCmd)) {
+
+            Integer exitCode = exitCodeFuture.get(5, TimeUnit.SECONDS);
+            return exitCode != null && exitCode == 0;
+        } catch (Exception e) {
+            log.debug("Port check exec failed or timed out: {}", e.getMessage());
+            return false;
         }
     }
 }
