@@ -67,3 +67,44 @@ spec:
                 name: codexa-ai-proxy
                 port:
                   number: 80
+
+---
+# 3. Custom domain — www.virtualgyans.tech/codexaai
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: codexa-custom-domain-ingress
+  namespace: codexa-ai
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: "nginx"
+  tls:
+    - hosts:
+        - "www.virtualgyans.tech"
+      secretName: virtualgyans-tls-secret
+  rules:
+    - host: "www.virtualgyans.tech"
+      http:
+        paths:
+          # Frontend: www.virtualgyans.tech/codexaai -> frontend /
+          - path: /codexaai(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: codexa-ai-proxy
+                port:
+                  number: 80
+          # API: www.virtualgyans.tech/codexaai/api -> api-gateway /
+          - path: /codexaai/api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 80
+
