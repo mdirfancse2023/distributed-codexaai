@@ -5,6 +5,12 @@ spring:
   config:
     import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}
 
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
   logging:
     level:
       org.springframework.cloud.gateway: DEBUG
@@ -13,13 +19,6 @@ spring:
 server:
   port: 9050
   servlet.context-path: /account
-
-spring:
-  datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
-    driver-class-name: org.postgresql.Driver
 
 stripe:
   api:
@@ -42,12 +41,3 @@ stripe:
     secret: ${STRIPE_API_KEY}
   webhook:
     secret: ${STRIPE_WEBHOOK_SECRET}
-    password: ${SPRING_DATASOURCE_PASSWORD}
-
-stripe:
-  api:
-    secret: ${STRIPE_API_KEY}
-  webhook:
-    secret: ${STRIPE_WEBHOOK_SECRET}
-
-
