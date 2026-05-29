@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -151,7 +152,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         String podIp = pod.getStatus().getPodIP();
         if (podIp == null) throw new RuntimeException("Pod is running but has no IP!");
 
-        redisTemplate.opsForValue().set("route:" + domain, podIp + ":5173", 6, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set("route:" + domain, podIp + ":5173", 1, TimeUnit.HOURS);
         log.info("Route Registered: {} -> {}", domain, podIp);
     }
 
@@ -207,6 +208,36 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         } catch (Exception e) {
             log.debug("Port check exec failed or timed out: {}", e.getMessage());
             return false;
+        }
+    }
+
+    @Scheduled(fixedDelay = 5, timeUnit = TimeUnit.MINUTES)
+    public void cleanupIdlePods() {
+        log.debug("Starting idle runner pods cleanup check...");
+        try {
+            client.pods().inNamespace(namespace)
+                    .withLabel(POOL_LABEL, BUSY)
+                    .list().getItems().forEach(pod -> {
+                        String podName = pod.getMetadata().getName();
+                        String projectIdStr = pod.getMetadata().getLabels().get(PROJECT_LABEL);
+                        if (projectIdStr == null) return;
+
+                        String domain = "project-" + projectIdStr + "." + baseDomain;
+                        String redisKey = "route:" + domain;
+
+                        Boolean hasRoute = redisTemplate.hasKey(redisKey);
+                        if (hasRoute == null || !hasRoute) {
+                            log.info("Runner pod {} (project {}) has been idle for 1 hour (Redis route key expired). Deleting pod...", podName, projectIdStr);
+                            try {
+                                client.pods().inNamespace(namespace).withName(podName).delete();
+                                log.info("Successfully deleted idle runner pod {}", podName);
+                            } catch (Exception e) {
+                                log.error("Failed to delete idle runner pod {}", podName, e);
+                            }
+                        }
+                    });
+        } catch (Exception e) {
+            log.error("Error during idle runner pods cleanup check", e);
         }
     }
 }

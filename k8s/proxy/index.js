@@ -127,6 +127,9 @@ function getPreviewHostname(previewKey) {
 async function getTarget(hostname) {
     try {
         const targetIpOrSvc = await redis.get(`route:${hostname}`);
+        if (targetIpOrSvc) {
+            redis.expire(`route:${hostname}`, 3600).catch(err => console.error('Redis Expire Error:', err));
+        }
         return targetIpOrSvc || null;
     } catch (err) {
         console.error('Redis Error:', err);
