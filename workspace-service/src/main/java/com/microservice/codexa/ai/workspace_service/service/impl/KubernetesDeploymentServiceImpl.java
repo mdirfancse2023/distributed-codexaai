@@ -83,6 +83,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         Pod pod = client.pods().inNamespace(namespace)
                 .withLabel(POOL_LABEL, IDLE)
                 .list().getItems().stream()
+                .filter(p -> p.getStatus() != null && "Running".equals(p.getStatus().getPhase()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("No idle runners available. Please scale up the runner-pool."));
 
