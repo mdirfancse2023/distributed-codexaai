@@ -23,5 +23,4 @@ runs:
         az aks get-credentials \
           --resource-group ${{ inputs.resource-group }} \
           --name ${{ inputs.cluster-name }} \
-          --admin \
           --overwrite-existing
