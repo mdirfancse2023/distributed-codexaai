@@ -19,10 +19,16 @@ runs:
         tenant-id: ${{ env.AZURE_TENANT_ID }}
         subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
+    - name: Install kubelogin
+      shell: bash
+      run: |
+        az aks install-cli 2>/dev/null || true
+
     - name: Set AKS context
       shell: bash
       run: |
         az aks get-credentials \
           --resource-group ${{ inputs.resource-group }} \
           --name ${{ inputs.cluster-name }} \
-          --overwrite-existing
+          --overwrite-existing \
+          --admin
