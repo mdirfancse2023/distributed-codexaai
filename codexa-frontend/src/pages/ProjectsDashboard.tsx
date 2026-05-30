@@ -125,8 +125,8 @@ export function ProjectsDashboard() {
     }, [authenticated, projects]);
 
     const upgradePlans: PlanResponse[] = [
-        { id: 1, name: "Codexa Pro", maxProjects: 100, maxTokensPerDay: 1000000, unlimitedAi: true },
-        { id: 2, name: "Codexa Plus", maxProjects: 25, maxTokensPerDay: 200000, unlimitedAi: false },
+        { id: 2, name: "Codexa Pro", maxProjects: 100, maxTokensPerDay: 1000000, unlimitedAi: true },
+        { id: 3, name: "Codexa Plus", maxProjects: 25, maxTokensPerDay: 200000, unlimitedAi: false },
     ];
 
     const fetchProjects = async () => {
