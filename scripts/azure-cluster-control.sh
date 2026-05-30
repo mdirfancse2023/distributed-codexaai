@@ -8,6 +8,7 @@
 # ./azure-cluster-control.sh stop
 # ./azure-cluster-control.sh start
 # ./azure-cluster-control.sh status
+# ./azure-cluster-control.sh ready
 
 CLUSTER_NAME="codexa-aks"
 RESOURCE_GROUP="codexa-rg"
@@ -27,13 +28,20 @@ case "$1" in
     echo "Checking AKS cluster status: $CLUSTER_NAME..."
     az aks show --name $CLUSTER_NAME --resource-group $RESOURCE_GROUP --query powerState -o tsv
     ;;
+  ready)
+    echo "Checking if AKS cluster is ready: $CLUSTER_NAME..."
+    az aks show --name $CLUSTER_NAME --resource-group $RESOURCE_GROUP --query '{powerState: powerState, provisioningState: provisioningState}' -o tsv
+    echo ""
+    echo "If cluster is Running, wait 5-10 minutes for all services to start"
+    ;;
   *)
-    echo "Usage: $0 {start|stop|status}"
+    echo "Usage: $0 {start|stop|status|ready}"
     echo ""
     echo "Commands:"
     echo "  start  - Start the AKS cluster"
     echo "  stop   - Stop the AKS cluster"
     echo "  status - Check cluster status"
+    echo "  ready  - Check if cluster is ready for use"
     exit 1
     ;;
 esac
