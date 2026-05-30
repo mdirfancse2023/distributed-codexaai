@@ -45,14 +45,14 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
   }, [previewStorageKey]);
 
   useEffect(() => {
-    if (previewUrl && !opensExternallyOnly) {
+    if (previewUrl) {
       setIsPreviewLoading(true);
       setPreviewLoadProgress((current) => (current > 5 ? current : 8));
     } else {
       setIsPreviewLoading(false);
       setPreviewLoadProgress(0);
     }
-  }, [opensExternallyOnly, previewUrl]);
+  }, [previewUrl]);
 
   useEffect(() => {
     if (!isPreviewLoading) {
@@ -156,14 +156,6 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
 
 
   const handleRefresh = () => {
-    if (opensExternallyOnly) {
-      toast({
-        title: "Preview requires HTTPS",
-        description: "This saved preview still uses HTTP. Run Preview again after the new deployment to load it in the embedded panel.",
-      });
-      return;
-    }
-
     if (iframeRef.current) {
       setIsPreviewLoading(true);
       setPreviewLoadProgress(18);
@@ -196,7 +188,7 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
               </span>
             </div>
 
-            {isPreviewLoading && !opensExternallyOnly ? (
+            {isPreviewLoading ? (
               <Progress value={previewLoadProgress} className="mt-1 h-0.5 bg-muted/50" />
             ) : null}
           </div>
@@ -237,7 +229,7 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
 
       {/* Preview Area */}
       <div className="relative flex-1 bg-[#1a1a1a]">
-        {previewUrl && !opensExternallyOnly ? (
+        {previewUrl ? (
           <iframe
             ref={iframeRef}
             key={previewUrl}
@@ -257,24 +249,6 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
               setPreviewLoadProgress(0);
             }}
           />
-        ) : previewUrl ? (
-          <div className="flex h-full flex-col items-center justify-center text-center p-8">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-muted/20">
-              <ExternalLink className="h-8 w-8 text-primary" />
-            </div>
-            <p className="text-sm font-medium text-foreground">Preview is running in a new tab</p>
-            <p className="mt-2 max-w-sm text-xs text-muted-foreground">
-              This workspace is served over HTTPS, but your preview URL is currently HTTP. Browsers block HTTP previews inside a secure iframe, so use the external preview tab for now.
-            </p>
-            <Button
-              onClick={() => openPreviewInNewTab(previewUrl)}
-              className="mt-5"
-              size="sm"
-            >
-              <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-              Open Preview
-            </Button>
-          </div>
         ) : isDeploying ? (
           <div className="flex h-full flex-col items-center justify-center text-center p-8">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-muted/20">
