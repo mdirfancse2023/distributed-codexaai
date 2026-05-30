@@ -75,7 +75,7 @@ spec:
                   number: 80
 
 ---
-# 3. Custom domain — www.virtualgyans.tech/codexaai
+# 3. Custom domain — codexaai.virtualgyans.tech
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -91,22 +91,22 @@ spec:
   ingressClassName: "nginx"
   tls:
     - hosts:
-        - "www.virtualgyans.tech"
+        - "codexaai.virtualgyans.tech"
       secretName: virtualgyans-tls-secret
   rules:
-    - host: "www.virtualgyans.tech"
+    - host: "codexaai.virtualgyans.tech"
       http:
         paths:
-          # Frontend: www.virtualgyans.tech/codexaai -> frontend /
-          - path: /codexaai(/|$)(.*)
+          # Frontend: codexaai.virtualgyans.tech -> frontend /
+          - path: (/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
                 name: codexa-ai-proxy
                 port:
                   number: 80
-          # API: www.virtualgyans.tech/codexaai/api -> api-gateway /
-          - path: /codexaai/api(/|$)(.*)
+          # API: codexaai.virtualgyans.tech/api -> api-gateway /
+          - path: /api(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
