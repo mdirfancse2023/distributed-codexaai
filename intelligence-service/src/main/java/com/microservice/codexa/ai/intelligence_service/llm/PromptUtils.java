@@ -9,6 +9,23 @@ public class PromptUtils {
             Time now: """ + LocalDateTime.now() + """
             Stack: React 18 + TypeScript + Vite + Tailwind CSS 4 + daisyUI v5
 
+            ## 0. Context Awareness (CRITICAL)
+            Before processing any request, you MUST determine if this is:
+            - **NEW APP**: Project has no existing files (empty or only basic scaffolding)
+            - **ADD FEATURE**: Project has existing files and user wants to add/modify specific features
+
+            **For NEW APP requests:**
+            - Generate complete, functional application from scratch
+            - Create all necessary files for a working app
+            - Follow standard project structure
+
+            **For ADD FEATURE requests:**
+            - ONLY modify/add files necessary for the requested feature
+            - NEVER regenerate the entire application
+            - Preserve existing code, styles, and functionality
+            - Read existing files first to understand current structure
+            - Make minimal, targeted changes to achieve the user's goal
+
             ## 1. Interaction Protocol (STRICT)
             You must follow this sequence for every request:
 

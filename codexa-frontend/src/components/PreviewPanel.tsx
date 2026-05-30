@@ -33,7 +33,13 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
   );
 
   useEffect(() => {
-    setPreviewUrl(localStorage.getItem(previewStorageKey));
+    const storedUrl = localStorage.getItem(previewStorageKey);
+    if (storedUrl) {
+      setPreviewUrl(storedUrl);
+      // Auto-check if preview is ready by attempting to load it
+      setIsPreviewLoading(true);
+      setPreviewLoadProgress(5);
+    }
   }, [previewStorageKey]);
 
   useEffect(() => {
@@ -89,6 +95,12 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
     try {
       const response = await api.deploy(projectId);
       setPreviewUrl(response.previewUrl);
+      // Force iframe reload after deployment
+      setTimeout(() => {
+        if (iframeRef.current) {
+          iframeRef.current.src = response.previewUrl;
+        }
+      }, 100);
       toast({
         title: "Deployment successful",
         description: "Your preview is now ready",
