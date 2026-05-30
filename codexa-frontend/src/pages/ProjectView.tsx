@@ -387,6 +387,8 @@ export function ProjectView() {
         setIsStreaming(false);
         // Trigger file refresh immediately for real-time updates
         setFilesRefreshToken((prev) => prev + 1);
+        // Clear updated files to force fresh content fetch from server
+        setUpdatedFiles(new Map());
       },
       (error) => {
         // Handle error - preserve any content that was received
