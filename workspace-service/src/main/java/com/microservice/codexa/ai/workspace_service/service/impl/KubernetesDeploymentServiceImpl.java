@@ -59,10 +59,11 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     }
 
     private String buildPreviewUrl(String previewKey) {
-        // Use subdomain approach for CSS isolation
-        // Instead of: frontendUrl/preview/project-{id}/
-        // Use: project-{id}.{previewDomain}
-        return "https://" + previewKey + "." + baseDomain + "/";
+        // Use proxy route through HTTPS domain to avoid mixed content warning
+        // Instead of: https://project-{id}.previews.virtualgyans.tech/
+        // Use: https://codexaai.virtualgyans.tech/preview-proxy/project-{id}.previews.virtualgyans.tech/
+        String httpPreviewUrl = "http://" + previewKey + "." + baseDomain + "/";
+        return frontendUrl + "/preview-proxy/" + httpPreviewUrl;
     }
 
     private Pod findActivePod(Long projectId) {
