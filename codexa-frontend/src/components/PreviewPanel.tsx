@@ -154,6 +154,54 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
     checkPreview();
   };
 
+  const injectCSIsolationScript = () => {
+    if (!iframeRef.current) return;
+    
+    try {
+      const iframe = iframeRef.current;
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      
+      if (!iframeDoc) return;
+      
+      // Create and inject isolation script
+      const script = iframeDoc.createElement('script');
+      script.textContent = `
+        (function() {
+          // Create a scoped CSS environment
+          const style = document.createElement('style');
+          style.textContent = \`
+            :root {
+              contain: style;
+            }
+            body {
+              contain: style layout;
+            }
+          \`;
+          document.head.appendChild(style);
+          
+          // Intercept and isolate CSS variable changes that could affect parent
+          const originalSetProperty = CSSStyleDeclaration.prototype.setProperty;
+          CSSStyleDeclaration.prototype.setProperty = function(property, value, priority) {
+            // Only block CSS variables that are commonly used for theming
+            const themeVariables = ['--background', '--foreground', '--primary', '--primary-foreground', '--muted', '--muted-foreground', '--accent', '--accent-foreground', '--border', '--input', '--ring'];
+            if (property.startsWith('--') && themeVariables.some(v => property.includes(v.split('-')[1]))) {
+              // Redirect to iframe-specific variable
+              const iframeVar = property.replace('--', '--preview-');
+              return originalSetProperty.call(this, iframeVar, value, priority);
+            }
+            return originalSetProperty.call(this, property, value, priority);
+          };
+          
+          console.log('CSS isolation script injected');
+        })();
+      `;
+      
+      iframeDoc.head.appendChild(script);
+    } catch (error) {
+      console.error('Failed to inject CSS isolation script:', error);
+    }
+  };
+
   const handleRefresh = () => {
     if (opensExternallyOnly) {
       toast({
@@ -249,6 +297,8 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
               setPreviewLoadProgress(100);
               // Clear loading state immediately for faster display
               setIsPreviewLoading(false);
+              // Inject CSS isolation script into iframe
+              injectCSIsolationScript();
             }}
             onError={() => {
               console.log('Iframe load error');
