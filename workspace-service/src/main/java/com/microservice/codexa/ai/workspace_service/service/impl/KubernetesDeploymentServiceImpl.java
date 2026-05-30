@@ -99,11 +99,11 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
 
         try {
             // Step 1: Clean workspace (keep node_modules for cache) and sync project files.
-            // Use ls/grep/xargs instead of 'find -exec' because the syncer container (minio/mc) may lack GNU find.
+            // The syncer container (minio/mc) lacks grep/xargs/find — use a pure bash for-loop.
             String initialSyncCmd = String.format(
-                    "cd /app && ls -A | grep -v '^node_modules$' | xargs rm -rf && mc mirror --overwrite myminio/projects/%d/ /app/",
+                    "cd /app && for f in $(ls -A); do [ \"$f\" != \"node_modules\" ] && rm -rf \"$f\"; done; mc mirror --overwrite myminio/projects/%d/ /app/",
                     projectId);
-            execCommand(podName, "syncer", "sh", "-c", initialSyncCmd);
+            execCommand(podName, "syncer", 60, "sh", "-c", initialSyncCmd);
 
             // Step 2: Start continuous background sync for live file updates
             String watchCmd = String.format("nohup mc mirror --overwrite --watch myminio/projects/%d/ /app/ > /app/sync.log 2>&1 &", projectId);
