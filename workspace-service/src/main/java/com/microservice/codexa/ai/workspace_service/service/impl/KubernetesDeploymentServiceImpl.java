@@ -4,7 +4,6 @@ package com.microservice.codexa.ai.workspace_service.service.impl;
 import com.microservice.codexa.ai.workspace_service.dto.deploy.DeployResponse;
 import com.microservice.codexa.ai.workspace_service.service.DeploymentService;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.ExecListener;
 import io.fabric8.kubernetes.client.dsl.ExecWatch;
@@ -240,35 +239,41 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     }
 
     /**
-     * Creates a new idle runner pod using the runner-pool template.
-     * This maintains a pool of idle pods ready for preview deployment.
+     * Ensures idle pod availability by scaling the runner-pool deployment.
+     * When a pod is claimed, this increases the replica count to maintain the pool.
      */
     private void createNewIdlePod() {
         try {
-            log.info("Creating new idle runner pod...");
-            Pod templatePod = client.pods().inNamespace(namespace)
+            log.info("Ensuring idle runner pod availability by scaling deployment...");
+            
+            // Get current idle pod count
+            int idleCount = (int) client.pods().inNamespace(namespace)
                     .withLabel(POOL_LABEL, IDLE)
                     .list().getItems().stream()
-                    .findFirst()
-                    .orElse(null);
-
-            if (templatePod == null) {
-                log.warn("No idle template pod found. Cannot create new idle pod. Using Deployment to manage replicas.");
-                return;
+                    .filter(p -> p.getStatus() != null && "Running".equals(p.getStatus().getPhase()))
+                    .count();
+            
+            // If no idle pods available, scale up the deployment
+            if (idleCount == 0) {
+                log.info("No idle pods available. Scaling runner-pool deployment to 2 replicas temporarily...");
+                try {
+                    var deployment = client.apps().deployments().inNamespace(namespace).withName("runner-pool").get();
+                    if (deployment != null) {
+                        int currentReplicas = deployment.getSpec().getReplicas();
+                        client.apps().deployments().inNamespace(namespace).withName("runner-pool")
+                                .edit(d -> {
+                                    d.getSpec().setReplicas(currentReplicas + 1);
+                                    return d;
+                                });
+                        log.info("Scaled runner-pool deployment from {} to {} replicas", 
+                                currentReplicas, currentReplicas + 1);
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not scale runner-pool deployment: {}", e.getMessage());
+                }
             }
-
-            // Create a new pod based on the template
-            Pod newPod = new io.fabric8.kubernetes.api.model.PodBuilder(templatePod)
-                    .editMetadata()
-                    .withName(null) // Let Kubernetes generate a unique name
-                    .withGenerateName(templatePod.getMetadata().getName() + "-")
-                    .endMetadata()
-                    .build();
-
-            Pod created = client.pods().inNamespace(namespace).create(newPod);
-            log.info("Successfully created new idle runner pod: {}", created.getMetadata().getName());
         } catch (Exception e) {
-            log.error("Failed to create new idle runner pod", e);
+            log.error("Error ensuring idle pod availability", e);
         }
     }
 
