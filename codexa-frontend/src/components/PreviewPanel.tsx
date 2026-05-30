@@ -39,11 +39,11 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
       // Auto-check if preview is ready by attempting to load it
       setIsPreviewLoading(true);
       setPreviewLoadProgress(5);
-      // Fallback: clear loading state after 8 seconds even if onLoad doesn't fire
+      // Fallback: clear loading state after 3 seconds even if onLoad doesn't fire
       const fallbackTimeout = setTimeout(() => {
         setIsPreviewLoading(false);
         setPreviewLoadProgress(100);
-      }, 8000);
+      }, 3000);
       return () => clearTimeout(fallbackTimeout);
     }
   }, [previewStorageKey]);
@@ -106,11 +106,11 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
         if (iframeRef.current) {
           iframeRef.current.src = response.previewUrl;
         }
-        // Fallback: clear loading state after 10 seconds even if onLoad doesn't fire
+        // Fallback: clear loading state after 3 seconds even if onLoad doesn't fire
         setTimeout(() => {
           setIsPreviewLoading(false);
           setPreviewLoadProgress(100);
-        }, 10000);
+        }, 3000);
       }, 100);
       toast({
         title: "Deployment successful",
@@ -221,9 +221,8 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
             onLoad={() => {
               console.log('Iframe loaded successfully');
               setPreviewLoadProgress(100);
-              window.setTimeout(() => {
-                setIsPreviewLoading(false);
-              }, 300);
+              // Clear loading state immediately for faster display
+              setIsPreviewLoading(false);
             }}
             onError={() => {
               console.log('Iframe load error');
