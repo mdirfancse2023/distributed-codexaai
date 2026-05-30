@@ -59,14 +59,10 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     }
 
     private String buildPreviewUrl(String previewKey) {
-        String normalizedPrefix = previewPathPrefix.startsWith("/")
-                ? previewPathPrefix
-                : "/" + previewPathPrefix;
-        String normalizedFrontendUrl = frontendUrl.endsWith("/")
-                ? frontendUrl.substring(0, frontendUrl.length() - 1)
-                : frontendUrl;
-
-        return normalizedFrontendUrl + normalizedPrefix + "/" + previewKey + "/";
+        // Use subdomain approach for CSS isolation
+        // Instead of: frontendUrl/preview/project-{id}/
+        // Use: project-{id}.{previewDomain}
+        return "https://" + previewKey + "." + baseDomain + "/";
     }
 
     private Pod findActivePod(Long projectId) {
