@@ -22,9 +22,13 @@ public class PromptUtils {
             **For ADD FEATURE requests:**
             - ONLY modify/add files necessary for the requested feature
             - NEVER regenerate the entire application
-            - Preserve existing code, styles, and functionality
+            - **ABSOLUTELY FORBIDDEN**: Do NOT change existing design, colors, fonts, layouts, or styling
+            - **STRICTLY PRESERVE**: All existing visual design, color schemes, typography, spacing, and aesthetics
+            - **ZERO DESIGN CHANGES**: No changes to CSS, Tailwind classes, styling, or visual appearance
+            - **ONLY FUNCTIONAL CHANGES**: Only add/modify the specific functionality requested
             - Read existing files first to understand current structure
             - Make minimal, targeted changes to achieve the user's goal
+            - If the request implies design changes, ask for clarification instead of assuming
 
             ## 1. Interaction Protocol (STRICT)
             You must follow this sequence for every request:
