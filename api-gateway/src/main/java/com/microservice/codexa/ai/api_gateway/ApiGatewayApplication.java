@@ -20,9 +20,9 @@ public class ApiGatewayApplication {
 				.path("/preview-proxy/**")
 				.filters(f -> f
 					.stripPrefix(1)
-					.rewritePath("/preview-proxy/(?<segment>.*)", "/${segment}")
+					.rewritePath("/preview-proxy/(?<segment>.*)", "http://${segment}")
 				)
-				.uri("http://codexa-ai-proxy.codexa-ai.svc.cluster.local:80"))
+				.uri("lb://codexa-ai-proxy"))
 			.build();
 	}
 }

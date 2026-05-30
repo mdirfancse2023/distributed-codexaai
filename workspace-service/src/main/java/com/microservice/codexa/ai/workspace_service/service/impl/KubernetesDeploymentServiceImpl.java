@@ -62,8 +62,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         // Use proxy route through HTTPS domain to avoid mixed content warning
         // Instead of: https://project-{id}.previews.virtualgyans.tech/
         // Use: https://codexaai.virtualgyans.tech/preview-proxy/project-{id}.previews.virtualgyans.tech/
-        String httpPreviewUrl = "http://" + previewKey + "." + baseDomain + "/";
-        return frontendUrl + "/preview-proxy/" + httpPreviewUrl;
+        return frontendUrl + "/preview-proxy/" + previewKey + "." + baseDomain + "/";
     }
 
     private Pod findActivePod(Long projectId) {
