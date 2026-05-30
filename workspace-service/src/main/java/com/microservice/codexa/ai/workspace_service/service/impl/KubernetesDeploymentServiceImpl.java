@@ -62,7 +62,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         // Use subdomain approach for CSS isolation
         // Instead of: frontendUrl/preview/project-{id}/
         // Use: project-{id}.{previewDomain}
-        return "http://" + previewKey + "." + baseDomain + "/";
+        return "https://" + previewKey + "." + baseDomain + "/";
     }
 
     private Pod findActivePod(Long projectId) {
