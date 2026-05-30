@@ -124,9 +124,9 @@ DOCKERHUB_USERNAME        <your Docker Hub username>
 DOCKERHUB_TOKEN           <your Docker Hub access token>
 
 CODEXA_APP_HOST           codexaai.virtualgyans.tech
-CODEXA_API_HOST           codexaai.virtualgyans.tech
+CODEXA_API_HOST           codexaapp.virtualgyans.tech
 CODEXA_PREVIEW_DOMAIN     previews.virtualgyans.tech
-CODEXA_API_URL            https://codexaai.virtualgyans.tech
+CODEXA_API_URL            https://codexaapp.virtualgyans.tech
 
 POSTGRES_PASSWORD         <strong-password>
 ACCOUNT_DB_PASSWORD       <strong-password>
@@ -192,9 +192,9 @@ if [[ -n "$INGRESS_IP" ]]; then
   echo "  Use these hostnames for your GitHub secrets:"
   echo "============================================================"
   echo "  CODEXA_APP_HOST:       codexaai.virtualgyans.tech"
-  echo "  CODEXA_API_HOST:       codexaai.virtualgyans.tech"
+  echo "  CODEXA_API_HOST:       codexaapp.virtualgyans.tech"
   echo "  CODEXA_PREVIEW_DOMAIN: previews.virtualgyans.tech"
-  echo "  CODEXA_API_URL:        https://codexaai.virtualgyans.tech"
+  echo "  CODEXA_API_URL:        https://codexaapp.virtualgyans.tech"
   echo "============================================================"
 else
   warn "Could not determine Ingress IP yet. Run after a few minutes:"

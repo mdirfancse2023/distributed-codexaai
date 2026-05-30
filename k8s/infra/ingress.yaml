@@ -75,7 +75,7 @@ spec:
                   number: 80
 
 ---
-# 3. Custom domain — codexaai.virtualgyans.tech
+# 3. Custom domain — codexaai.virtualgyans.tech (frontend)
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -85,7 +85,6 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: "nginx"
@@ -98,16 +97,39 @@ spec:
       http:
         paths:
           # Frontend: codexaai.virtualgyans.tech -> frontend /
-          - path: (/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /
+            pathType: Prefix
             backend:
               service:
                 name: codexa-ai-proxy
                 port:
                   number: 80
-          # API: codexaai.virtualgyans.tech/api -> api-gateway /
-          - path: /api(/|$)(.*)
-            pathType: ImplementationSpecific
+
+---
+# 4. Custom domain — codexaapp.virtualgyans.tech (backend API)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: codexa-backend-domain-ingress
+  namespace: codexa-ai
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: "nginx"
+  tls:
+    - hosts:
+        - "codexaapp.virtualgyans.tech"
+      secretName: virtualgyans-backend-tls-secret
+  rules:
+    - host: "codexaapp.virtualgyans.tech"
+      http:
+        paths:
+          # API: codexaapp.virtualgyans.tech -> api-gateway /
+          - path: /
+            pathType: Prefix
             backend:
               service:
                 name: api-gateway
@@ -115,7 +137,7 @@ spec:
                   number: 80
 
 ---
-# 4. Custom domain previews — *.previews.virtualgyans.tech with SSL
+# 5. Custom domain previews — *.previews.virtualgyans.tech with SSL
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
