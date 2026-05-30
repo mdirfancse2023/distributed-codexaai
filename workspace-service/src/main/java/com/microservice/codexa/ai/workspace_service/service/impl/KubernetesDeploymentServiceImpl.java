@@ -98,19 +98,30 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         });
 
         try {
-            String initialSyncCmd = String.format("find /app -mindepth 1 -maxdepth 1 ! -name node_modules -exec rm -rf {} + && mc mirror --overwrite myminio/projects/%d/ /app/", projectId);
+            // Step 1: Clean workspace (keep node_modules for cache) and sync project files.
+            // Use ls/grep/xargs instead of 'find -exec' because the syncer container (minio/mc) may lack GNU find.
+            String initialSyncCmd = String.format(
+                    "cd /app && ls -A | grep -v '^node_modules$' | xargs rm -rf && mc mirror --overwrite myminio/projects/%d/ /app/",
+                    projectId);
             execCommand(podName, "syncer", "sh", "-c", initialSyncCmd);
 
+            // Step 2: Start continuous background sync for live file updates
             String watchCmd = String.format("nohup mc mirror --overwrite --watch myminio/projects/%d/ /app/ > /app/sync.log 2>&1 &", projectId);
             execCommand(podName, "syncer", "sh", "-c", watchCmd);
 
-            // Write dependency installer script
+            // Step 3: Write the dependency auto-detection script to the runner
             String base64Script = "Y29uc3QgZnM9cmVxdWlyZSgnZnMnKSxwYXRoPXJlcXVpcmUoJ3BhdGgnKSxwa2dQYXRoPScvYXBwL3BhY2thZ2UuanNvbic7aWYoIWZzLmV4aXN0c1N5bmMocGtnUGF0aCkpZnMud3JpdGVGaWxlU3luYyhwa2dQYXRoLEpTT04uc3RyaW5naWZ5KHtuYW1lOiJjb2RleGEtYWktcHJvamVjdCIscHJpdmF0ZTp0cnVlLHZlcnNpb246IjAuMC4wIix0eXBlOiJtb2R1bGUiLHNjcmlwdHM6e2Rldjoidml0ZSJ9LGRlcGVuZGVuY2llczp7cmVhY3Q6Il4xOC4zLjEiLCJyZWFjdC1kb20iOiJeMTguMy4xIn0sZGV2RGVwZW5kZW5jaWVzOnt2aXRlOiJeNS40LjE5In19LG51bGwsMikpO2NvbnN0IHBrZz1KU09OLnBhcnNlKGZzLnJlYWRGaWxlU3luYyhwa2dQYXRoLCd1dGY4JykpO3BrZy5kZXBlbmRlbmNpZXM9cGtnLmRlcGVuZGVuY2llc3x8e307Y29uc3QgZmluZEltcG9ydHM9ZD0+e2xldCBpbXBzPW5ldyBTZXQoKTtjb25zdCBsaXN0PWRpcj0+e2lmKCFmcy5leGlzdHNTeW5jKGRpcikpcmV0dXJuO2Zvcihjb25zdCBmIG9mIGZzLnJlYWRkaXJTeW5jKGRpcikpe2NvbnN0IHA9cGF0aC5qb2luKGRpcixmKSxzPWZzLnN0YXRTeW5jKHApO2lmKHMuaXNEaXJlY3RvcnkoKSl7aWYoZiE9PSdub2RlX21vZHVsZXMnJiZmIT09Jy5naXQnKWxpc3QocCl9ZWxzZSBpZigvXC4oanN8anN4fHRzfHRzeCkkLy50ZXN0KGYpKXtjb25zdCBjPWZzLnJlYWRGaWxlU3luYyhwLCd1dGY4Jyk7Zm9yKGNvbnN0IG0gb2YgYy5tYXRjaEFsbCgvKD86aW1wb3J0fGV4cG9ydClccysoPzpbXHcqXHN7fSxdKlxzK2Zyb21ccyspP1snIl0oW14nIi4vXVteJyJdKilbJyJdL2cpKWltcHMuYWRkKG1bMV0pO2Zvcihjb25zdCBtIG9mIGMubWF0Y2hBbGwoL2ltcG9ydFxzKlwoXHMqWyciXShbXiciLi9dW14nIl0qKVsnIl1ccypcKS9nKSlpbXBzLmFkZChtWzFdKX19fTtsaXN0KGQpO3JldHVybiBBcnJheS5mcm9tKGltcHMpfTtjb25zdCBpbXBvcnRzPWZpbmRJbXBvcnRzKCcvYXBwL3NyYycpLGdldEJhc2U9cD0+e2lmKHAuc3RhcnRzV2l0aCgnQC8nKSlyZXR1cm4gbnVsbDtpZihwLnN0YXJ0c1dpdGgoJ0AnKSl7Y29uc3QgcHRzPXAuc3BsaXQoJy8nKTtyZXR1cm4gcHRzLmxlbmd0aD49Mj9wdHMuc2xpY2UoMCwyKS5qb2luKCcvJyk6bnVsbH1yZXR1cm4gcC5zcGxpdCgnLycpWzBdfTtjb25zdCBidWlsdGlucz1uZXcgU2V0KHJlcXVpcmUoJ21vZHVsZScpLmJ1aWx0aW5Nb2R1bGVzKSxhZGRlZD1bXTtmb3IoY29uc3QgaW1wIG9mIGltcG9ydHMpe2NvbnN0IGI9Z2V0QmFzZShpbXApO2lmKGImJiFidWlsdGlucy5oYXMoYikmJiFwa2cuZGVwZW5kZW5jaWVzW2JdJiYhKHBrZy5kZXZEZXBlbmRlbmNpZXMmJnBrZy5kZXZEZXBlbmRlbmNpZXNbYl0pKXtwa2cuZGVwZW5kZW5jaWVzW2JdPSdsYXRlc3QnO2FkZGVkLnB1c2goYil9fWlmKGFkZGVkLmxlbmd0aD4wKXtjb25zb2xlLmxvZygnQWRkaW5nIG1pc3NpbmcgZGVwZW5kZW5jaWVzOicsYWRkZWQpO2ZzLndyaXRlRmlsZVN5bmMocGtnUGF0aCxKU09OLnN0cmluZ2lmeShwa2csbnVsbCwyKSl9ZWxzZXtjb25zb2xlLmxvZygnTm8gbWlzc2luZyBkZXBlbmRlbmNpZXMuJyl9";
             String writeScriptCmd = String.format("echo \"%s\" | base64 -d > /app/auto-dep.js", base64Script);
             execCommand(podName, "runner", "sh", "-c", writeScriptCmd);
 
-            String startCmd = "node /app/auto-dep.js && npm install --prefer-offline --no-audit --no-fund && nohup npm run dev -- --host 0.0.0.0 --port 5173 > /app/dev.log 2>&1 &";
-            execCommand(podName, "runner", "sh", "-c", startCmd);
+            // Step 4: Run auto-dep detection + npm install SYNCHRONOUSLY (wait up to 120s)
+            // This MUST complete before Vite starts, otherwise Vite will fail on missing modules.
+            String installCmd = "node /app/auto-dep.js && npm install --prefer-offline --no-audit --no-fund";
+            execCommand(podName, "runner", 120, "sh", "-c", installCmd);
+
+            // Step 5: Start Vite dev server in background
+            String viteCmd = "nohup npm run dev -- --host 0.0.0.0 --port 5173 > /app/dev.log 2>&1 &";
+            execCommand(podName, "runner", "sh", "-c", viteCmd);
 
             log.info("Waiting for Vite dev server to start on port 5173 inside pod {}...", podName);
             boolean serverReady = false;
@@ -162,7 +173,11 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
     }
 
     private void execCommand(String podName, String container, String... command) {
-        log.debug("Exec in {}:{} -> {}", podName, container, String.join(" ", command));
+        execCommand(podName, container, 30, command);
+    }
+
+    private void execCommand(String podName, String container, int timeoutSeconds, String... command) {
+        log.debug("Exec in {}:{} (timeout={}s) -> {}", podName, container, timeoutSeconds, String.join(" ", command));
 
         CompletableFuture<String> data = new CompletableFuture<>();
         try (ExecWatch ignored = client.pods().inNamespace(namespace).withName(podName)
@@ -180,7 +195,7 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
             if (command[command.length - 1].trim().endsWith("&")) {
                 Thread.sleep(500);
             } else {
-                data.get(30, TimeUnit.SECONDS);
+                data.get(timeoutSeconds, TimeUnit.SECONDS);
             }
 
         } catch (Exception e) {
