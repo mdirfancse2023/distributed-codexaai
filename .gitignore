@@ -101,4 +101,4 @@ uploads/
 ############################
 secrets.yml
 application-secret.yml
-application-local.yml
+application-local.ymlcurrent-app-secrets.yaml
