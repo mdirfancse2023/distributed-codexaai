@@ -39,12 +39,8 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
       // Auto-check if preview is ready by attempting to load it
       setIsPreviewLoading(true);
       setPreviewLoadProgress(5);
-      // Fallback: clear loading state after 3 seconds even if onLoad doesn't fire
-      const fallbackTimeout = setTimeout(() => {
-        setIsPreviewLoading(false);
-        setPreviewLoadProgress(100);
-      }, 3000);
-      return () => clearTimeout(fallbackTimeout);
+      // Poll to check if preview is actually ready
+      pollPreviewReady(storedUrl);
     }
   }, [previewStorageKey]);
 
@@ -106,11 +102,8 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
         if (iframeRef.current) {
           iframeRef.current.src = response.previewUrl;
         }
-        // Fallback: clear loading state after 3 seconds even if onLoad doesn't fire
-        setTimeout(() => {
-          setIsPreviewLoading(false);
-          setPreviewLoadProgress(100);
-        }, 3000);
+        // Poll to check if preview is actually ready
+        pollPreviewReady(response.previewUrl);
       }, 100);
       toast({
         title: "Deployment successful",
@@ -126,6 +119,39 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
     } finally {
       setIsDeploying(false);
     }
+  };
+
+  const pollPreviewReady = (url: string) => {
+    let attempts = 0;
+    const maxAttempts = 60; // 2 minutes with 2-second intervals
+    const pollInterval = 2000; // Check every 2 seconds
+
+    const checkPreview = async () => {
+      try {
+        const response = await fetch(url, { mode: 'no-cors' });
+        // With no-cors, we can't check response status, but if it doesn't throw, the URL is reachable
+        console.log('Preview is ready');
+        setIsPreviewLoading(false);
+        setPreviewLoadProgress(100);
+        return true;
+      } catch (error) {
+        attempts++;
+        console.log(`Preview not ready yet, attempt ${attempts}/${maxAttempts}`);
+        
+        if (attempts >= maxAttempts) {
+          console.log('Max polling attempts reached, clearing loading state');
+          setIsPreviewLoading(false);
+          setPreviewLoadProgress(100);
+          return false;
+        }
+        
+        // Continue polling
+        setTimeout(checkPreview, pollInterval);
+        return false;
+      }
+    };
+
+    checkPreview();
   };
 
   const handleRefresh = () => {
