@@ -176,7 +176,7 @@ export function ProjectView() {
 
         const formattedMessages: ChatMessage[] = history.map((msg) => ({
           id: msg.id.toString(),
-          role: msg.role === "USER" ? "user" : "assistant",
+          role: (msg.role === "USER" ? "user" : "assistant") as "user" | "assistant",
           content: msg.content,
           createdAt: msg.createdAt,
           events: msg.events,
@@ -385,24 +385,8 @@ export function ProjectView() {
           )
         );
         setIsStreaming(false);
-        setTimeout(() => {
-          setFilesRefreshToken((prev) => prev + 1);
-        }, 500);
-
-        // Refresh chat history to show persisted events after completion
-        try {
-          const history = await api.getChatHistory(projectId);
-          const formattedMessages: ChatMessage[] = history.map((msg) => ({
-            id: msg.id.toString(),
-            role: msg.role === "USER" ? "user" : "assistant",
-            content: msg.content,
-            createdAt: msg.createdAt,
-            events: msg.events,
-          }));
-          setMessages(collapseConsecutiveUserDuplicates(formattedMessages));
-        } catch (error) {
-          console.error("Failed to refresh chat history:", error);
-        }
+        // Trigger file refresh immediately for real-time updates
+        setFilesRefreshToken((prev) => prev + 1);
       },
       (error) => {
         // Handle error - preserve any content that was received
