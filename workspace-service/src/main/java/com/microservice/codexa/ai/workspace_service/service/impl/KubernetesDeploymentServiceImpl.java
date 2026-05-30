@@ -4,6 +4,7 @@ package com.microservice.codexa.ai.workspace_service.service.impl;
 import com.microservice.codexa.ai.workspace_service.dto.deploy.DeployResponse;
 import com.microservice.codexa.ai.workspace_service.service.DeploymentService;
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.ExecListener;
 import io.fabric8.kubernetes.client.dsl.ExecWatch;
@@ -154,6 +155,13 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
             Pod updatedPod = client.pods().inNamespace(namespace).withName(podName).get();
             registerRoute(domain, updatedPod);
 
+            // Create a new idle pod to maintain the pool
+            log.info("Creating new idle runner pod to replace the claimed one...");
+            createNewIdlePod();
+
+            // Enforce max pod limit (remove oldest if total >= 10)
+            enforceMaxPodLimit();
+
             log.info("Deployment successful: {}", formattedUrl);
             return new DeployResponse(formattedUrl);
 
@@ -228,6 +236,101 @@ public class KubernetesDeploymentServiceImpl implements DeploymentService {
         } catch (Exception e) {
             log.debug("Port check exec failed or timed out: {}", e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Creates a new idle runner pod using the runner-pool template.
+     * This maintains a pool of idle pods ready for preview deployment.
+     */
+    private void createNewIdlePod() {
+        try {
+            log.info("Creating new idle runner pod...");
+            Pod templatePod = client.pods().inNamespace(namespace)
+                    .withLabel(POOL_LABEL, IDLE)
+                    .list().getItems().stream()
+                    .findFirst()
+                    .orElse(null);
+
+            if (templatePod == null) {
+                log.warn("No idle template pod found. Cannot create new idle pod. Using Deployment to manage replicas.");
+                return;
+            }
+
+            // Create a new pod based on the template
+            Pod newPod = new io.fabric8.kubernetes.api.model.PodBuilder(templatePod)
+                    .editMetadata()
+                    .withName(null) // Let Kubernetes generate a unique name
+                    .withGenerateName(templatePod.getMetadata().getName() + "-")
+                    .endMetadata()
+                    .build();
+
+            Pod created = client.pods().inNamespace(namespace).create(newPod);
+            log.info("Successfully created new idle runner pod: {}", created.getMetadata().getName());
+        } catch (Exception e) {
+            log.error("Failed to create new idle runner pod", e);
+        }
+    }
+
+    /**
+     * Enforces the max pod limit (10 total pods).
+     * If the total number of runner pods exceeds 10, removes the oldest idle pods first,
+     * then oldest busy pods if necessary.
+     */
+    private void enforceMaxPodLimit() {
+        try {
+            log.debug("Checking pod limit enforcement...");
+            var allPods = client.pods().inNamespace(namespace)
+                    .withLabel("app", "runner")
+                    .list().getItems();
+
+            int totalPods = allPods.size();
+            int MAX_PODS = 10;
+
+            if (totalPods >= MAX_PODS) {
+                log.info("Pod limit reached: {} pods. Enforcing max limit of {}...", totalPods, MAX_PODS);
+
+                // Step 1: Remove oldest IDLE pods first
+                var idlePods = allPods.stream()
+                        .filter(p -> "idle".equals(p.getMetadata().getLabels().get(POOL_LABEL)))
+                        .sorted((a, b) -> a.getMetadata().getCreationTimestamp()
+                                .compareTo(b.getMetadata().getCreationTimestamp()))
+                        .toList();
+
+                int toRemove = totalPods - (MAX_PODS - 1);  // Keep 1 slot free
+
+                for (int i = 0; i < Math.min(toRemove, idlePods.size()); i++) {
+                    String podName = idlePods.get(i).getMetadata().getName();
+                    try {
+                        client.pods().inNamespace(namespace).withName(podName).delete();
+                        log.info("Removed old idle pod {} to enforce max limit", podName);
+                        toRemove--;
+                    } catch (Exception e) {
+                        log.error("Failed to delete idle pod {}", podName, e);
+                    }
+                }
+
+                // Step 2: If still over limit, remove oldest BUSY pods
+                if (toRemove > 0) {
+                    var busyPods = allPods.stream()
+                            .filter(p -> "busy".equals(p.getMetadata().getLabels().get(POOL_LABEL)))
+                            .sorted((a, b) -> a.getMetadata().getCreationTimestamp()
+                                    .compareTo(b.getMetadata().getCreationTimestamp()))
+                            .toList();
+
+                    for (int i = 0; i < Math.min(toRemove, busyPods.size()); i++) {
+                        String podName = busyPods.get(i).getMetadata().getName();
+                        try {
+                            client.pods().inNamespace(namespace).withName(podName).delete();
+                            log.info("Removed old busy pod {} to enforce max limit", podName);
+                        } catch (Exception e) {
+                            log.error("Failed to delete busy pod {}", podName, e);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error enforcing max pod limit", e);
         }
     }
 
