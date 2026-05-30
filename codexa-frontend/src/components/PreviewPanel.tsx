@@ -44,6 +44,42 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
     }
   }, [previewStorageKey]);
 
+  // Protect parent app CSS variables from iframe changes
+  useEffect(() => {
+    if (!previewUrl) return;
+
+    // Store original CSS variables
+    const originalStyle = document.documentElement.style.cssText;
+    const themeVariables = ['--background', '--foreground', '--primary', '--primary-foreground', '--muted', '--muted-foreground', '--accent', '--accent-foreground', '--border', '--input', '--ring'];
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+          // Check if any theme variables were changed
+          const currentStyle = document.documentElement.style.cssText;
+          const hasThemeVariableChange = themeVariables.some(variable => 
+            currentStyle.includes(variable) && !originalStyle.includes(variable)
+          );
+
+          if (hasThemeVariableChange) {
+            // Revert to original style
+            document.documentElement.style.cssText = originalStyle;
+            console.log('Reverted CSS variable changes from iframe');
+          }
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['style']
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [previewUrl]);
+
   useEffect(() => {
     if (previewUrl && !opensExternallyOnly) {
       setIsPreviewLoading(true);
@@ -154,53 +190,6 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
     checkPreview();
   };
 
-  const injectCSIsolationScript = () => {
-    if (!iframeRef.current) return;
-    
-    try {
-      const iframe = iframeRef.current;
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      
-      if (!iframeDoc) return;
-      
-      // Create and inject isolation script
-      const script = iframeDoc.createElement('script');
-      script.textContent = `
-        (function() {
-          // Create a scoped CSS environment
-          const style = document.createElement('style');
-          style.textContent = \`
-            :root {
-              contain: style;
-            }
-            body {
-              contain: style layout;
-            }
-          \`;
-          document.head.appendChild(style);
-          
-          // Intercept and isolate CSS variable changes that could affect parent
-          const originalSetProperty = CSSStyleDeclaration.prototype.setProperty;
-          CSSStyleDeclaration.prototype.setProperty = function(property, value, priority) {
-            // Only block CSS variables that are commonly used for theming
-            const themeVariables = ['--background', '--foreground', '--primary', '--primary-foreground', '--muted', '--muted-foreground', '--accent', '--accent-foreground', '--border', '--input', '--ring'];
-            if (property.startsWith('--') && themeVariables.some(v => property.includes(v.split('-')[1]))) {
-              // Redirect to iframe-specific variable
-              const iframeVar = property.replace('--', '--preview-');
-              return originalSetProperty.call(this, iframeVar, value, priority);
-            }
-            return originalSetProperty.call(this, property, value, priority);
-          };
-          
-          console.log('CSS isolation script injected');
-        })();
-      `;
-      
-      iframeDoc.head.appendChild(script);
-    } catch (error) {
-      console.error('Failed to inject CSS isolation script:', error);
-    }
-  };
 
   const handleRefresh = () => {
     if (opensExternallyOnly) {
@@ -285,27 +274,27 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
       {/* Preview Area */}
       <div className="relative flex-1 bg-[#1a1a1a]">
         {previewUrl && !opensExternallyOnly ? (
-          <iframe
-            ref={iframeRef}
-            key={previewUrl}
-            src={previewUrl}
-            className="w-full h-full border-0"
-            title="Preview"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-            onLoad={() => {
-              console.log('Iframe loaded successfully');
-              setPreviewLoadProgress(100);
-              // Clear loading state immediately for faster display
-              setIsPreviewLoading(false);
-              // Inject CSS isolation script into iframe
-              injectCSIsolationScript();
-            }}
-            onError={() => {
-              console.log('Iframe load error');
-              setIsPreviewLoading(false);
-              setPreviewLoadProgress(0);
-            }}
-          />
+          <div className="w-full h-full" style={{ isolation: 'isolate', contain: 'strict' }}>
+            <iframe
+              ref={iframeRef}
+              key={previewUrl}
+              src={previewUrl}
+              className="w-full h-full border-0"
+              title="Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+              onLoad={() => {
+                console.log('Iframe loaded successfully');
+                setPreviewLoadProgress(100);
+                // Clear loading state immediately for faster display
+                setIsPreviewLoading(false);
+              }}
+              onError={() => {
+                console.log('Iframe load error');
+                setIsPreviewLoading(false);
+                setPreviewLoadProgress(0);
+              }}
+            />
+          </div>
         ) : previewUrl ? (
           <div className="flex h-full flex-col items-center justify-center text-center p-8">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-muted/20">
