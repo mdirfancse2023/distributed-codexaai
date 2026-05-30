@@ -44,42 +44,6 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
     }
   }, [previewStorageKey]);
 
-  // Protect parent app CSS variables from iframe changes
-  useEffect(() => {
-    if (!previewUrl) return;
-
-    // Store original CSS variables
-    const originalStyle = document.documentElement.style.cssText;
-    const themeVariables = ['--background', '--foreground', '--primary', '--primary-foreground', '--muted', '--muted-foreground', '--accent', '--accent-foreground', '--border', '--input', '--ring'];
-
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          // Check if any theme variables were changed
-          const currentStyle = document.documentElement.style.cssText;
-          const hasThemeVariableChange = themeVariables.some(variable => 
-            currentStyle.includes(variable) && !originalStyle.includes(variable)
-          );
-
-          if (hasThemeVariableChange) {
-            // Revert to original style
-            document.documentElement.style.cssText = originalStyle;
-            console.log('Reverted CSS variable changes from iframe');
-          }
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['style']
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [previewUrl]);
-
   useEffect(() => {
     if (previewUrl && !opensExternallyOnly) {
       setIsPreviewLoading(true);
@@ -274,27 +238,25 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
       {/* Preview Area */}
       <div className="relative flex-1 bg-[#1a1a1a]">
         {previewUrl && !opensExternallyOnly ? (
-          <div className="w-full h-full" style={{ isolation: 'isolate', contain: 'strict' }}>
-            <iframe
-              ref={iframeRef}
-              key={previewUrl}
-              src={previewUrl}
-              className="w-full h-full border-0"
-              title="Preview"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-              onLoad={() => {
-                console.log('Iframe loaded successfully');
-                setPreviewLoadProgress(100);
-                // Clear loading state immediately for faster display
-                setIsPreviewLoading(false);
-              }}
-              onError={() => {
-                console.log('Iframe load error');
-                setIsPreviewLoading(false);
-                setPreviewLoadProgress(0);
-              }}
-            />
-          </div>
+          <iframe
+            ref={iframeRef}
+            key={previewUrl}
+            src={previewUrl}
+            className="w-full h-full border-0"
+            title="Preview"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+            onLoad={() => {
+              console.log('Iframe loaded successfully');
+              setPreviewLoadProgress(100);
+              // Clear loading state immediately for faster display
+              setIsPreviewLoading(false);
+            }}
+            onError={() => {
+              console.log('Iframe load error');
+              setIsPreviewLoading(false);
+              setPreviewLoadProgress(0);
+            }}
+          />
         ) : previewUrl ? (
           <div className="flex h-full flex-col items-center justify-center text-center p-8">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-muted/20">
