@@ -3,6 +3,12 @@
 # Azure AKS Cluster Control Script
 # Usage: ./azure-cluster-control.sh [start|stop|status]
 
+# Quick Reference Commands:
+# cd /Users/macbook/Documents/SpringBoot\ Anuj/Microservices/scripts
+# ./azure-cluster-control.sh stop
+# ./azure-cluster-control.sh start
+# ./azure-cluster-control.sh status
+
 CLUSTER_NAME="codexa-aks"
 RESOURCE_GROUP="codexa-rg"
 
