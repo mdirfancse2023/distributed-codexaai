@@ -114,5 +114,35 @@ spec:
                 port:
                   number: 80
 
+---
+# 4. Custom domain previews — *.previews.virtualgyans.tech with SSL
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: codexa-preview-custom-domain-ingress
+  namespace: codexa-ai
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: "nginx"
+  tls:
+    - hosts:
+        - "*.previews.virtualgyans.tech"
+      secretName: virtualgyans-preview-tls-secret
+  rules:
+    - host: "*.previews.virtualgyans.tech"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: codexa-ai-proxy
+                port:
+                  number: 80
+
 
 
