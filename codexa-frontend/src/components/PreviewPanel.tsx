@@ -243,7 +243,7 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
             src={previewUrl}
             className="w-full h-full border-0"
             title="Preview"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            sandbox="allow-scripts allow-forms allow-popups allow-modals"
             onLoad={() => {
               console.log('Iframe loaded successfully');
               setPreviewLoadProgress(100);
