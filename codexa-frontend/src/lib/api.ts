@@ -65,8 +65,10 @@ const parseErrorResponse = async (response: Response, fallbackMessage: string) =
   const rawText = await response.text();
   if (!rawText) return fallbackMessage;
 
-  const isHtml = /<\s*(html|!doctype|body)(\s|>)/i.test(rawText);
-  if (isHtml || response.status >= 500) {
+  const contentType = response.headers.get("content-type") || "";
+  const looksLikeHtml = /<\s*(html|!doctype|body|title|h1|div|span)(\s|>)/i.test(rawText);
+  const looksLikeServicePage = /503\s+Service\s+Temporarily\s+Unavailable|502\s+Bad\s+Gateway|504\s+Gateway\s+Timeout|nginx/i.test(rawText);
+  if (contentType.includes("text/html") || looksLikeHtml || looksLikeServicePage || response.status >= 500) {
     return "The service is temporarily unavailable. Please try again later.";
   }
 
@@ -92,9 +94,14 @@ const parseErrorResponse = async (response: Response, fallbackMessage: string) =
       return "Please check your details and try again.";
     }
 
+    if (/</.test(backendMessage) || looksLikeServicePage) {
+      return "The service is temporarily unavailable. Please try again later.";
+    }
+
     return backendMessage;
   } catch {
     if (response.status === 401) return "Invalid email or password.";
+    if (response.status >= 500) return "The service is temporarily unavailable. Please try again later.";
     return fallbackMessage;
   }
 };
