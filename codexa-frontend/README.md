@@ -118,3 +118,4 @@ Response: text/event-stream with JSON payloads containing:
 
 - If the frontend can’t reach the backend, confirm VITE_API_URL and that the backend is running.
 - If SSE disconnects, increase backend timeouts and ensure the stream completes cleanly.
+
