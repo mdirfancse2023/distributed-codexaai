@@ -27,17 +27,32 @@ runs:
     - name: Start AKS cluster if stopped
       shell: bash
       run: |
-        az aks start \
-          --resource-group ${{ inputs.resource-group }} \
-          --name ${{ inputs.cluster-name }} \
-          --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}
+        set -euo pipefail
+        power_state=$(az aks show \
+          --resource-group "${{ inputs.resource-group }}" \
+          --name "${{ inputs.cluster-name }}" \
+          --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" \
+          --query powerState.code -o tsv 2>/dev/null || echo "Unknown")
+
+        echo "Current AKS power state: ${power_state}"
+
+        if [[ "$power_state" == "Stopped" ]]; then
+          az aks start \
+            --resource-group "${{ inputs.resource-group }}" \
+            --name "${{ inputs.cluster-name }}" \
+            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}"
+        elif [[ "$power_state" == "Running" ]] || [[ "$power_state" == "Unknown" ]]; then
+          echo "AKS cluster is already running or power state is unavailable; skipping start."
+        else
+          echo "AKS cluster power state is '$power_state'; skipping start." 
+        fi
 
     - name: Confirm AKS cluster power state
       shell: bash
       run: |
         az aks show \
-          --resource-group ${{ inputs.resource-group }} \
-          --name ${{ inputs.cluster-name }} \
+          --resource-group "${{ inputs.resource-group }}" \
+          --name "${{ inputs.cluster-name }}" \
           --query powerState \
           -o tsv
 
