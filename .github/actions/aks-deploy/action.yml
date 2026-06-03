@@ -24,6 +24,23 @@ runs:
       run: |
         az aks install-cli 2>/dev/null || true
 
+    - name: Start AKS cluster if stopped
+      shell: bash
+      run: |
+        az aks start \
+          --resource-group ${{ inputs.resource-group }} \
+          --name ${{ inputs.cluster-name }} \
+          --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Confirm AKS cluster power state
+      shell: bash
+      run: |
+        az aks show \
+          --resource-group ${{ inputs.resource-group }} \
+          --name ${{ inputs.cluster-name }} \
+          --query powerState \
+          -o tsv
+
     - name: Set AKS context
       shell: bash
       run: |
