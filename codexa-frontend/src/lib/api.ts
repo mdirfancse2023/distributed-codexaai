@@ -257,7 +257,7 @@ export const api = {
       const response = await authedFetch(`${BASE_URL}/api/v1/account/subscription`);
 
       if (!response.ok) {
-        const error = await response.text();
+        const error = await parseErrorResponse(response, "Failed to fetch subscription");
         throw new Error(error || "Failed to fetch subscription");
       }
 
@@ -276,7 +276,7 @@ export const api = {
     });
 
     if (!response.ok) {
-      const error = await response.text();
+      const error = await parseErrorResponse(response, "Failed to create checkout session");
       throw new Error(error || "Failed to create checkout session");
     }
 
@@ -289,7 +289,7 @@ export const api = {
     });
 
     if (!response.ok) {
-      const error = await response.text();
+      const error = await parseErrorResponse(response, "Failed to open billing portal");
       throw new Error(error || "Failed to open billing portal");
     }
 
@@ -384,7 +384,7 @@ export const api = {
     const response = await authedFetch(`${BASE_URL}/api/v1/workspace/projects/${id}`);
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorText = await parseErrorResponse(response, "Failed to fetch project");
       console.error(`Failed to fetch project ${id}:`, response.status, errorText);
       throw new Error(`Failed to fetch project: ${response.status} ${errorText}`);
     }
@@ -456,7 +456,7 @@ export const api = {
     });
 
     if (!response.ok) {
-      const error = await response.text();
+      const error = await parseErrorResponse(response, "Failed to invite member");
       throw new Error(error || "Failed to invite member");
     }
 
@@ -501,7 +501,7 @@ export const api = {
     const response = await authedFetch(`${BASE_URL}/api/v1/intelligence/chat/projects/${projectId}`);
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorText = await parseErrorResponse(response, "Failed to fetch chat history");
       console.error(`Failed to fetch chat history for project ${projectId}:`, response.status, errorText);
       // Return empty array instead of throwing error for chat history
       return [];
@@ -536,8 +536,8 @@ export const api = {
     })
       .then(async (response) => {
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Chat stream failed: ${response.status} ${errorText}`);
+          const errorText = await parseErrorResponse(response, `Chat stream failed with status ${response.status}`);
+          throw new Error(errorText || `Chat stream failed with status ${response.status}`);
         }
 
         const reader = response.body?.getReader();
