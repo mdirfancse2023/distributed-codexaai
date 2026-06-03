@@ -37,10 +37,20 @@ runs:
         echo "Current AKS power state: ${power_state}"
 
         if [[ "$power_state" == "Stopped" ]]; then
-          az aks start \
+          # Try to start the cluster; if start fails (e.g. previous start failed),
+          # fall back to 'az aks update' to recover the cluster state.
+          if az aks start \
             --resource-group "${{ inputs.resource-group }}" \
             --name "${{ inputs.cluster-name }}" \
-            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}"
+            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}"; then
+            echo "az aks start succeeded"
+          else
+            echo "az aks start failed. Attempting az aks update to recover from transient state."
+            az aks update \
+              --resource-group "${{ inputs.resource-group }}" \
+              --name "${{ inputs.cluster-name }}" \
+              --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}" || true
+          fi
         elif [[ "$power_state" == "Running" ]]; then
           echo "AKS cluster is already running; skipping start."
         else
