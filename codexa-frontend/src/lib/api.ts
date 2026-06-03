@@ -65,6 +65,11 @@ const parseErrorResponse = async (response: Response, fallbackMessage: string) =
   const rawText = await response.text();
   if (!rawText) return fallbackMessage;
 
+  const isHtml = /<\s*(html|!doctype|body)(\s|>)/i.test(rawText);
+  if (isHtml || response.status >= 500) {
+    return "The service is temporarily unavailable. Please try again later.";
+  }
+
   try {
     const parsed = JSON.parse(rawText) as { message?: string; error?: string; status?: string };
     const backendMessage = parsed.message || parsed.error || rawText;
@@ -90,7 +95,7 @@ const parseErrorResponse = async (response: Response, fallbackMessage: string) =
     return backendMessage;
   } catch {
     if (response.status === 401) return "Invalid email or password.";
-    return rawText || fallbackMessage;
+    return fallbackMessage;
   }
 };
 
