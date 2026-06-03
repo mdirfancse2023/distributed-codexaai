@@ -13,8 +13,13 @@ env:
   IMAGE_NAME: mdirfancse2023/codexa-frontend
 
 permissions:
+  contents: write
   id-token: write
-  contents: read
+  pull-requests: write
+  actions: write
+  checks: write
+  statuses: write
+  deployments: write
 
 jobs:
   build-and-deploy:
