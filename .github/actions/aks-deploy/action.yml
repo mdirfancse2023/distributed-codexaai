@@ -41,10 +41,14 @@ runs:
             --resource-group "${{ inputs.resource-group }}" \
             --name "${{ inputs.cluster-name }}" \
             --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}"
-        elif [[ "$power_state" == "Running" ]] || [[ "$power_state" == "Unknown" ]]; then
-          echo "AKS cluster is already running or power state is unavailable; skipping start."
+        elif [[ "$power_state" == "Running" ]]; then
+          echo "AKS cluster is already running; skipping start."
         else
-          echo "AKS cluster power state is '$power_state'; skipping start." 
+          echo "AKS cluster power state is '$power_state'. Attempting az aks update to recover from transient state or previous failed start."
+          az aks update \
+            --resource-group "${{ inputs.resource-group }}" \
+            --name "${{ inputs.cluster-name }}" \
+            --subscription "${{ env.AZURE_SUBSCRIPTION_ID }}"
         fi
 
     - name: Confirm AKS cluster power state
@@ -53,7 +57,7 @@ runs:
         az aks show \
           --resource-group "${{ inputs.resource-group }}" \
           --name "${{ inputs.cluster-name }}" \
-          --query powerState \
+          --query powerState.code \
           -o tsv
 
     - name: Set AKS context
