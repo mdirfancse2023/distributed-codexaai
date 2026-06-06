@@ -113,7 +113,7 @@ spec:
         storageClassName: managed-csi
         resources:
           requests:
-            storage: 10Gi
+            storage: 1Gi
 
 ---
 apiVersion: v1
