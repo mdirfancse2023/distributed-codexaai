@@ -385,10 +385,10 @@ export function ProjectView() {
           )
         );
         setIsStreaming(false);
-        // Trigger file refresh immediately for real-time updates
-        setFilesRefreshToken((prev) => prev + 1);
-        // Clear updated files to force fresh content fetch from server
+        // Clear updated files first to force fresh content fetch from server
         setUpdatedFiles(new Map());
+        // Then trigger file refresh immediately for real-time updates
+        setFilesRefreshToken((prev) => prev + 1);
       },
       (error) => {
         // Handle error - preserve any content that was received

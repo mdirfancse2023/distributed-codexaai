@@ -9,3 +9,5 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Reset sequence to continue from the last inserted ID
 SELECT setval('plan_id_seq', (SELECT MAX(id) FROM plan));
+
+-- Create and two folders in minio storage and upload startup project in one folder
