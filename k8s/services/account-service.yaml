@@ -7,6 +7,8 @@ metadata:
   namespace: codexa-ai
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: account-service
@@ -57,9 +59,11 @@ spec:
                 configMapKeyRef:
                   name: codexa-shared-config
                   key: APP_FRONTEND_URL
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=60.0 -XX:ActiveProcessorCount=2 -XX:+UseSerialGC"
           resources:
             requests:
-              cpu: 100m
+              cpu: 50m
               memory: 256Mi
             limits:
               cpu: 250m
@@ -68,7 +72,7 @@ spec:
             httpGet:
               path: /account/actuator/health
               port: 9050
-            initialDelaySeconds: 120   
+            initialDelaySeconds: 45   
             periodSeconds: 15
             timeoutSeconds: 5         
             failureThreshold: 3

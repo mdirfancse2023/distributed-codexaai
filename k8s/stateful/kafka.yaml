@@ -31,7 +31,7 @@ spec:
               name: controller
           env:
             - name: KAFKA_HEAP_OPTS
-              value: "-Xms512M -Xmx512M"
+              value: "-Xms256M -Xmx256M"
             - name: KAFKA_LOG4J_ROOT_LOGLEVEL
               value: "ERROR"
             - name: KAFKA_LOG4J_LOGGERS
@@ -66,11 +66,11 @@ spec:
               value: "6PMpHYL9QkeyXRj9Nrp4KA"
           resources:
             requests:
+              cpu: 50m
+              memory: 384Mi
+            limits:
               cpu: 250m
               memory: 512Mi
-            limits:
-              cpu: 1000m
-              memory: 1Gi
           volumeMounts:
             - name: kafka-data
               mountPath: /var/lib/kafka/data

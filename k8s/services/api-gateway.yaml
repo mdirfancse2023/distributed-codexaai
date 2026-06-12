@@ -7,6 +7,8 @@ metadata:
   namespace: codexa-ai
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: api-gateway
@@ -37,18 +39,20 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: JWT_SECRET
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=60.0 -XX:ActiveProcessorCount=2 -XX:+UseSerialGC"
           resources:
             requests:
-              cpu: 100m
+              cpu: 50m
               memory: 192Mi
             limits:
               cpu: 250m
-              memory: 384Mi
+              memory: 256Mi
           readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
-            initialDelaySeconds: 90
+            initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3

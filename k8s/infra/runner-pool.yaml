@@ -31,10 +31,10 @@ spec:
             - containerPort: 5173
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "100m"
+              memory: "128Mi"
+              cpu: "40m"
             limits:
-              memory: "1Gi"
+              memory: "512Mi"
               cpu: "500m"
 
         # 2. THE SYNCER (MinIO mc)
@@ -60,8 +60,8 @@ spec:
               mountPath: /app
           resources:
             requests:
-              memory: "64Mi"
+              memory: "32Mi"
               cpu: "10m"
             limits:
-              memory: "256Mi"
+              memory: "128Mi"
               cpu: "200m"

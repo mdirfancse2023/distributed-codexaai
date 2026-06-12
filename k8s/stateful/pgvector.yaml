@@ -90,11 +90,11 @@ spec:
                   key: INTELLIGENCE_DB_PASSWORD
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 50m
+              memory: 128Mi
             limits:
               cpu: 250m
-              memory: 512Mi
+              memory: 256Mi
           volumeMounts:
             - name: pgdata
               mountPath: /var/lib/postgresql/data

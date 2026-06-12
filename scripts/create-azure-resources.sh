@@ -24,8 +24,8 @@ set -euo pipefail
 RESOURCE_GROUP="${RESOURCE_GROUP:-codexa-rg}"
 LOCATION="${LOCATION:-eastus}"
 CLUSTER_NAME="${CLUSTER_NAME:-codexa-aks}"
-NODE_COUNT="${NODE_COUNT:-2}"
-NODE_VM_SIZE="${NODE_VM_SIZE:-Standard_D4s_v3}"
+NODE_COUNT="${NODE_COUNT:-1}"
+NODE_VM_SIZE="${NODE_VM_SIZE:-Standard_B2s_v2}"
 SP_NAME="${SP_NAME:-codexa-github-sp}"
 
 # ---------------------------------------------------------------------------
