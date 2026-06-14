@@ -12,3 +12,11 @@ spec:
       - http01:
           ingress:
             class: nginx
+      - selector:
+          dnsNames:
+            - "*.previews.virtualgyans.me"
+        dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token-secret
+              key: api-token
