@@ -141,17 +141,27 @@ const createAuthedHeaders = (headers?: HeadersInit) => {
 };
 
 const authedFetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
-  const response = await fetch(input, {
-    ...init,
-    headers: createAuthedHeaders(init.headers),
-  });
+  try {
+    const response = await fetch(input, {
+      ...init,
+      headers: createAuthedHeaders(init.headers),
+    });
 
-  if (response.status === 401) {
-    clearAuthState();
-    throw new Error(AUTH_EXPIRED_MESSAGE);
+    if (response.status === 401) {
+      clearAuthState();
+      throw new Error(AUTH_EXPIRED_MESSAGE);
+    }
+
+    return response;
+  } catch (error) {
+    if (error instanceof Error && error.message === AUTH_EXPIRED_MESSAGE) {
+      throw error;
+    }
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      throw new Error("Cannot connect to the backend server. The backend service might be offline or undergoing maintenance.");
+    }
+    throw error;
   }
-
-  return response;
 };
 
 // LocalStorage keys
@@ -230,33 +240,47 @@ function buildFileTree(paths: { path: string }[]): FileNode[] {
 
 export const api = {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
-    const response = await fetch(`${BASE_URL}/api/v1/account/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(credentials),
-    });
+    try {
+      const response = await fetch(`${BASE_URL}/api/v1/account/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+      });
 
-    if (!response.ok) {
-      const error = await parseErrorResponse(response, "Login failed");
-      throw new Error(error || "Login failed");
+      if (!response.ok) {
+        const error = await parseErrorResponse(response, "Login failed");
+        throw new Error(error || "Login failed");
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        throw new Error("Cannot connect to the backend server. The backend service might be offline or undergoing maintenance.");
+      }
+      throw error;
     }
-
-    return response.json();
   },
 
   async signup(data: SignupRequest): Promise<AuthResponse> {
-    const response = await fetch(`${BASE_URL}/api/v1/account/auth/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+    try {
+      const response = await fetch(`${BASE_URL}/api/v1/account/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
 
-    if (!response.ok) {
-      const error = await parseErrorResponse(response, "Signup failed");
-      throw new Error(error || "Signup failed");
+      if (!response.ok) {
+        const error = await parseErrorResponse(response, "Signup failed");
+        throw new Error(error || "Signup failed");
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        throw new Error("Cannot connect to the backend server. The backend service might be offline or undergoing maintenance.");
+      }
+      throw error;
     }
-
-    return response.json();
   },
 
   async getCurrentSubscription(): Promise<SubscriptionResponse | null> {
