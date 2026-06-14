@@ -28,10 +28,10 @@ s DOCKERHUB_USERNAME "mdirfancse2023"
 s DOCKERHUB_TOKEN    "${DOCKERHUB_TOKEN:?Set DOCKERHUB_TOKEN env var}"
 
 # ── Domains (ingress IP: 20.204.189.207) ─────────────────────────────────────
-s CODEXA_APP_HOST       "codexaai.virtualgyans.tech"
-s CODEXA_API_HOST       "app.virtualgyans.tech"
-s CODEXA_PREVIEW_DOMAIN "previews.virtualgyans.tech"
-s CODEXA_API_URL        "https://codexaai.virtualgyans.tech"
+s CODEXA_APP_HOST       "codexaai.virtualgyans.me"
+s CODEXA_API_HOST       "codexaapp.virtualgyans.me"
+s CODEXA_PREVIEW_DOMAIN "previews.virtualgyans.me"
+s CODEXA_API_URL        "https://codexaapp.virtualgyans.me"
 
 # ── PostgreSQL ────────────────────────────────────────────────────────────────
 s POSTGRES_PASSWORD        "CoDeXa@Pg#2026!Root"

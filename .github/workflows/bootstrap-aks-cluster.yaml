@@ -110,7 +110,6 @@ jobs:
           kubectl apply -f k8s/services/workspace-service.yaml
           kubectl apply -f k8s/services/intelligence-service.yaml
           kubectl apply -f k8s/services/api-gateway.yaml
-          kubectl apply -f k8s/services/frontend.yaml
 
       - name: Deploy preview proxy
         run: kubectl apply -f k8s/proxy/proxy-deployment.yaml

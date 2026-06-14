@@ -20,7 +20,8 @@ public class CorsConfig {
                                 "http://*.sslip.io",
                                 "https://*.sslip.io",
                                 "https://*.codexaai.in",
-                                "https://codexaai.virtualgyans.tech",
+                                "https://codexaai.virtualgyans.me",
+                                "https://*.previews.virtualgyans.me",
                                 "http://localhost:*"));
 
                 corsConfig.setAllowedMethods(Arrays.asList(

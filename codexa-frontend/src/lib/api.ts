@@ -1,6 +1,6 @@
 import { ChatMessage, CheckoutResponse, DeployResponse, FileNode, LoginCredentials, LoginResponse, PortalResponse, ProjectSummaryResponse, ProjectRequest, ProjectResponse, ProjectMember, ProjectRole, SignupRequest, SubscriptionResponse, AuthResponse } from "./types";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "https://codexaapp.virtualgyans.tech";
+const BASE_URL = import.meta.env.VITE_API_URL || "https://codexaapp.virtualgyans.me";
 const AUTH_TOKEN_KEY = "auth_token";
 const USER_INFO_KEY = "user_info";
 const AUTH_EXPIRY_SKEW_MS = 30_000;
