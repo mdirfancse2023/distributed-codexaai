@@ -84,7 +84,6 @@ jobs:
           ./scripts/configure-domains.sh
           kubectl apply -f .k8s-rendered/infra/namespaces.yaml
           kubectl apply -f .k8s-rendered/infra/ingress.yaml
-          kubectl apply -f .k8s-rendered/infra/certificate.yaml
 
       - name: Apply RBAC
         run: kubectl apply -f k8s/infra/rbac.yaml

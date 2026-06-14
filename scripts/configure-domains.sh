@@ -24,7 +24,6 @@ render() {
 
 render "${ROOT}/k8s/infra/namespaces.yaml" "${TMP}/infra/namespaces.yaml"
 render "${ROOT}/k8s/infra/ingress.yaml" "${TMP}/infra/ingress.yaml"
-render "${ROOT}/k8s/infra/certificate.yaml" "${TMP}/infra/certificate.yaml"
 
 for f in "${ROOT}"/k8s/stateful/*.yaml; do
   cp "$f" "${TMP}/stateful/$(basename "$f")"
