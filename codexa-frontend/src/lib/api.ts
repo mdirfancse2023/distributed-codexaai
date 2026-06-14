@@ -158,7 +158,7 @@ const authedFetch = async (input: RequestInfo | URL, init: RequestInit = {}) => 
       throw error;
     }
     if (error instanceof TypeError && error.message.includes("fetch")) {
-      throw new Error("Cannot connect to the backend server. The backend service might be offline or undergoing maintenance.");
+      throw new Error("Cannot connect to the backend server. The backend service might be offline (to save Azure resource costs) or undergoing maintenance. Please make sure the AKS cluster is started.");
     }
     throw error;
   }
@@ -255,7 +255,7 @@ export const api = {
       return response.json();
     } catch (error) {
       if (error instanceof TypeError && error.message.includes("fetch")) {
-        throw new Error("Cannot connect to the backend server. The backend service might be offline or undergoing maintenance.");
+        throw new Error("Cannot connect to the backend server. The backend service might be offline (to save Azure resource costs) or undergoing maintenance. Please make sure the AKS cluster is started.");
       }
       throw error;
     }
@@ -277,7 +277,7 @@ export const api = {
       return response.json();
     } catch (error) {
       if (error instanceof TypeError && error.message.includes("fetch")) {
-        throw new Error("Cannot connect to the backend server. The backend service might be offline or undergoing maintenance.");
+        throw new Error("Cannot connect to the backend server. The backend service might be offline (to save Azure resource costs) or undergoing maintenance. Please make sure the AKS cluster is started.");
       }
       throw error;
     }
