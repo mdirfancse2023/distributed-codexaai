@@ -1,0 +1,25 @@
+# Use Node 20 slim as base image
+FROM node:20-slim
+
+# Install system dependencies and Azure CLI
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    apt-transport-https \
+    lsb-release \
+    gnupg \
+    && curl -sL https://aka.ms/InstallAzureCLIDeb | bash \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy the proxy server script
+COPY scripts/aks-wake-proxy.js ./scripts/aks-wake-proxy.js
+
+# Expose the proxy server port (default 8080)
+EXPOSE 8080
+
+# Start the proxy server
+CMD ["node", "scripts/aks-wake-proxy.js"]
