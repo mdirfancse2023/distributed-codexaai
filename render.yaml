@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: aks-wake-proxy
+    runtime: docker
+    dockerfilePath: Dockerfile.proxy
+    plan: free
+    envVars:
+      - key: AZURE_CLIENT_ID
+        sync: false
+      - key: AZURE_CLIENT_SECRET
+        sync: false
+      - key: AZURE_TENANT_ID
+        sync: false
+      - key: AZURE_SUBSCRIPTION_ID
+        sync: false
+      - key: AZURE_AKS_CLUSTER
+        value: codexa-aks
+      - key: AZURE_RESOURCE_GROUP
+        value: codexa-rg
+      - key: CODEXA_API_URL
+        value: https://api.20.204.189.207.sslip.io
+      - key: CODEXA_API_HOST
+        value: api.20.204.189.207.sslip.io
