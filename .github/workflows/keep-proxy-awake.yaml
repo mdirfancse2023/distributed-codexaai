@@ -1,0 +1,25 @@
+name: Keep Standby Proxy Awake
+
+on:
+  schedule:
+    # Run every 10 minutes to keep Render container awake (Render timeout is 15 mins)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  ping-proxy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Proxy Status Endpoint
+        run: |
+          PROXY_URL="${{ secrets.CODEXA_API_URL }}"
+          if [ -z "$PROXY_URL" ]; then
+            echo "Error: CODEXA_API_URL secret is not set. Please set it in Repository Secrets."
+            exit 1
+          fi
+          
+          # Remove trailing slash if present
+          CLEAN_URL="${PROXY_URL%/}"
+          
+          echo "Sending keep-alive ping to: $CLEAN_URL/proxy-status"
+          curl -s -o /dev/null -w "%{http_code}" "$CLEAN_URL/proxy-status"
